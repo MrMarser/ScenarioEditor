@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMainWindow, QMenuBar, QStatusBar, QFileDialog
+from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QToolBar
 from PyQt6.QtGui import QAction
 
 
@@ -13,6 +13,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("scenarioEditor")
         self.setGeometry(0,0,1920,1080)
         self.showMaximized()
+
+
 
     def barMenu(self):
         menu = self.menuBar()
@@ -47,21 +49,26 @@ class MainWindow(QMainWindow):
 
 
     def openFile(self):
-        fileName = QFileDialog.getOpenFileName(self, "Open file", "", "JSON files (*.json)")
+        fileName, _ = QFileDialog.getOpenFileName(self, "Open file", "", "JSON files (*.json)")
 
         if fileName:
             try:
                 with open(fileName, "r") as file:
                     content = file.read()
-                    print(content) ##TODO
+                    print(str(content)) ##TODO
             except Exception as e:
-                pass
-        
-# Инициализируем и запускаем приложение
+                print("error", e)
+        else:
+            print("error")
+
+    def TollBar(self):
+        pass
+
+
 app = QApplication(sys.argv)
 window = MainWindow()
 window.barMenu()
 window.show()
 
-app.setStyleSheet(Path("style.css").read_text())
+app.setStyleSheet(Path("main/style.css").read_text())
 sys.exit(app.exec())
