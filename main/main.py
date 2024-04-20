@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
 
 
 
+        openAction.triggered.connect(self.openFile)
         exitAction.triggered.connect(self.close)
 
 
@@ -46,8 +47,16 @@ class MainWindow(QMainWindow):
 
 
     def openFile(self):
-        pass
-      
+        fileName = QFileDialog.getOpenFileName(self, "Open file", "", "JSON files (*.json)")
+
+        if fileName:
+            try:
+                with open(fileName, "r") as file:
+                    content = file.read()
+                    print(content) ##TODO
+            except Exception as e:
+                pass
+        
 # Инициализируем и запускаем приложение
 app = QApplication(sys.argv)
 window = MainWindow()
