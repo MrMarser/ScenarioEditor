@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
             dock_widget = QDockWidget("", self)
             dock_widget.setStyleSheet("background-color: rgb(30, 40, 50)")
             dock_widget.setWidget(self.tree_widget)
-            self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock_widget)
+            self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock_widget)
         else:
             self.tree_widget.clear()
         self.tree_widget.setStyleSheet("""
