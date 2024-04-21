@@ -1,23 +1,47 @@
 import sys
 import os
+import json
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem
+from PyQt6.QtWidgets import QApplication, QMainWindow, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QColor, QPen, QBrush
 from PyQt6.QtCore import Qt, QRectF
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
-        self.setWindowTitle("scenarioEditor")
+        self.setWindowTitle("Scenario Editor")
         self.setGeometry(0, 0, 1920, 1080)
         self.showMaximized()
 
     def barMenu(self):
         menu = self.menuBar()
+    
         fileMenu = menu.addMenu("&File")
-        menu.setStyleSheet("font-size: 15px")
+        menu.setStyleSheet("""
+        QMenuBar {
+            font-size: 15px;
+            background-color: rgb(50, 70, 90);
+            color: white;
+        }
+        QMenuBar::item:selected { 
+            background-color: black;
+            color: white; 
+        }
+        QMenu {
+            font-size: 15px;
+            background-color: rgb(50, 70, 90);
+        }
+        QMenu::item {
+            background-color: transparent;
+            color: white;
+        }
+        QMenu::item:selected { 
+            background-color: black;
+            color: white; 
+        }
+    """)
+        
+        
 
         openAction = QAction("&Open", self)
         fileMenu.addAction(openAction)
@@ -47,12 +71,10 @@ class MainWindow(QMainWindow):
         if fileName:
             try:
                 with open(fileName, "r") as file:
-                    content = file.read()
-                    print(str(content))  # TODO
+                    content = json.load(file)
+                    self.updateTreeWidget(content)
             except Exception as e:
-                print("error", e)
-        else:
-            print("error")
+                QMessageBox.critical(self, "Load Error", f"Failed to load file: {e}")
 
     def TollBar(self):
         toolbar = QToolBar("Tool bar")
@@ -72,13 +94,10 @@ class MainWindow(QMainWindow):
         toolbar.addAction(playAnimation)
 
         selectBackground.triggered.connect(self.showBackgroundMenu)
-        ##addSprite.triggered.connect() ##TODO
-        ##newFrame.triggered.connect() ##TODO
-        ##playAnimation.triggered.connect() ##TODO
-
+        # More TODO
 
         self.toolbar = toolbar
-        
+
     def showBackgroundMenu(self):
         menu = QMenu()
         imageActions = []
@@ -108,17 +127,6 @@ class MainWindow(QMainWindow):
 
         return photos
 
-
-    def folders(self):
-        folders = []
-        folderPath = "sprites/"
-        if os.path.exists(folderPath):
-            for item in os.listdir(folderPath):
-                itemPath = os.path.join(folderPath, item)
-                if os.path.isdir(itemPath):
-                    folders.append(item)
-        return folders
-
     def createCanvas(self):
         scene = QGraphicsScene()
         view = QGraphicsView(scene)
@@ -144,8 +152,6 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(view)
 
-
-
     def zoom(self, event: QWheelEvent):
         view = self.centralWidget()
         factor = 1.1
@@ -155,8 +161,43 @@ class MainWindow(QMainWindow):
         else:
             view.scale(1/factor, 1/factor)
 
+    def updateTreeWidget(self, data):
+        if not hasattr(self, 'tree_widget'):
+            self.tree_widget = QTreeWidget()
 
+            self.tree_widget.setHeaderLabels(['Scene Elements'])
 
+            self.tree_widget.header().setStyleSheet("""
+            QHeaderView::section {
+                background-color: rgb(50, 70, 90); 
+                color: white; 
+                font-size: 14px; 
+            }
+        """)
+
+            dock_widget = QDockWidget("", self)
+            dock_widget.setStyleSheet("background-color: rgb(30, 40, 50)")
+            dock_widget.setWidget(self.tree_widget)
+            self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock_widget)
+        else:
+            self.tree_widget.clear()
+        self.tree_widget.setStyleSheet("""
+            background-color: rgb(50, 70, 90);
+            color: white;
+        """)
+        self.load_tree_items(data, self.tree_widget)
+
+    def load_tree_items(self, data, parent_item):
+        if isinstance(data, dict):
+            for key, value in data.items():
+                child_item = QTreeWidgetItem(parent_item, [str(key)])
+                self.load_tree_items(value, child_item)
+        elif isinstance(data, list):
+            for index, item in enumerate(data):
+                child_item = QTreeWidgetItem(parent_item, [f'Item {index}'])
+                self.load_tree_items(item, child_item)
+        else:
+            QTreeWidgetItem(parent_item, [str(data)])
 
 app = QApplication(sys.argv)
 window = MainWindow()
