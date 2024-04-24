@@ -1,59 +1,40 @@
+# -*- coding: utf-8 -*-
 import sys
 import os
 import json
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMainWindow, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
+from PyQt6.QtWidgets import QApplication, QListWidget, QMainWindow, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QColor, QPen, QBrush
-from PyQt6.QtCore import Qt, QRectF
+from PyQt6.QtCore import Qt
 
 class MainWindow(QMainWindow):
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Scenario Editor")
         self.setGeometry(0, 0, 1920, 1080)
         self.showMaximized()
+        self.createCanvas()
+        self.barMenu()
+        self.TollBar()
+        self.treeWidget = QTreeWidget()
+        self.treeWidget.setHeaderHidden(True)
+        self.setupDockWidget()
+        self.connectSignals()
+        self.inspectorDockWidget()
 
     def barMenu(self):
         menu = self.menuBar()
-    
         fileMenu = menu.addMenu("&File")
-        menu.setStyleSheet("""
-        QMenuBar {
-            font-size: 15px;
-            background-color: rgb(50, 70, 90);
-            color: white;
-        }
-        QMenuBar::item:selected { 
-            background-color: black;
-            color: white; 
-        }
-        QMenu {
-            font-size: 15px;
-            background-color: rgb(50, 70, 90);
-        }
-        QMenu::item {
-            background-color: transparent;
-            color: white;
-        }
-        QMenu::item:selected { 
-            background-color: black;
-            color: white; 
-        }
-    """)
-        
-        
+        menu.setStyleSheet(Path("main/menuBar.css").read_text())
 
         openAction = QAction("&Open", self)
         fileMenu.addAction(openAction)
-
         saveAction = QAction("&Save", self)
         fileMenu.addAction(saveAction)
-
         saveAsAction = QAction("&Save As...", self)
         fileMenu.addAction(saveAsAction)
-
         fileMenu.addSeparator()
-
         exitAction = QAction("&Exit", self)
         fileMenu.addAction(exitAction)
 
@@ -67,12 +48,12 @@ class MainWindow(QMainWindow):
 
     def openFile(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Open file", "", "JSON files (*.json)")
-
         if fileName:
             try:
-                with open(fileName, "r") as file:
+                with open(fileName, "r", encoding="utf-8") as file:
                     content = json.load(file)
-                    self.updateTreeWidget(content)
+                    print(content)
+                    self.dockTreeWidget(content)
             except Exception as e:
                 QMessageBox.critical(self, "Load Error", f"Failed to load file: {e}")
 
@@ -118,13 +99,10 @@ class MainWindow(QMainWindow):
     def images(self):
         photos = []
         file_dir = "backgrounds/"
-
         for file_name in os.listdir(file_dir):
             file_path = os.path.join(file_dir, file_name)
-
             if os.path.isfile(file_path) and file_name.lower().endswith(".png"):
                 photos.append(file_name)
-
         return photos
 
     def createCanvas(self):
@@ -135,76 +113,131 @@ class MainWindow(QMainWindow):
         view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-
-
         view.wheelEvent = self.zoom
-
-
         rect_item = scene.addRect(0, 0, 1600, 900)
         pen = QPen(Qt.GlobalColor.black)
         rect_item.setPen(pen)
-
         view.setStyleSheet("background-color: rgb(50, 70, 90)")
-
         insideRect = QGraphicsRectItem(view.sceneRect())
         insideRect.setBrush(QBrush(Qt.GlobalColor.white))
         scene.addItem(insideRect)
-
         self.setCentralWidget(view)
 
     def zoom(self, event: QWheelEvent):
         view = self.centralWidget()
         factor = 1.1
-
         if event.angleDelta().y() > 0:
             view.scale(factor, factor)
         else:
             view.scale(1/factor, 1/factor)
 
-    def updateTreeWidget(self, data):
-        if not hasattr(self, 'tree_widget'):
-            self.tree_widget = QTreeWidget()
-
-            self.tree_widget.setHeaderLabels(['Scene Elements'])
-
-            self.tree_widget.header().setStyleSheet("""
+    def setupDockWidget(self):
+        dockWidget = QDockWidget("Scene Elements", self)
+        dockWidget.setWidget(self.treeWidget)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dockWidget)
+        self.treeWidget.header().setStyleSheet("""
             QHeaderView::section {
                 background-color: rgb(50, 70, 90); 
                 color: white; 
                 font-size: 14px; 
             }
         """)
-
-            dock_widget = QDockWidget("", self)
-            dock_widget.setStyleSheet("background-color: rgb(30, 40, 50)")
-            dock_widget.setWidget(self.tree_widget)
-            self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock_widget)
-        else:
-            self.tree_widget.clear()
-        self.tree_widget.setStyleSheet("""
-            background-color: rgb(50, 70, 90);
+        dockWidget.setStyleSheet("""
+            background-color: rgb(30, 40, 50);
             color: white;
         """)
-        self.load_tree_items(data, self.tree_widget)
 
-    def load_tree_items(self, data, parent_item):
-        if isinstance(data, dict):
-            for key, value in data.items():
-                child_item = QTreeWidgetItem(parent_item, [str(key)])
-                self.load_tree_items(value, child_item)
-        elif isinstance(data, list):
-            for index, item in enumerate(data):
-                child_item = QTreeWidgetItem(parent_item, [f'Item {index}'])
-                self.load_tree_items(item, child_item)
-        else:
-            QTreeWidgetItem(parent_item, [str(data)])
+    def connectSignals(self):
+        self.treeWidget.itemClicked.connect(self.onItemClicked)
+
+    def onItemClicked(self, item):
+        path = []
+        while item is not None:
+            path.append(item.text(0))  
+            item = item.parent()  
+        path.reverse()  
+
+    def dockTreeWidget(self, data):
+        self.treeWidget.clear()
+        self.loadTreeItems(data)
+
+    def loadTreeItems(self, data):
+        for key, _ in data.items():
+            root = QTreeWidgetItem(self.treeWidget, [str(key)])
+            self.treeWidget.addTopLevelItem(root)
+            background = QTreeWidgetItem(["background"])
+            text = QTreeWidgetItem(["text"])
+            ui = QTreeWidgetItem(["ui"])
+            sprites = QTreeWidgetItem(["sprites"])
+            music = QTreeWidgetItem(["music"])
+
+            root.addChild(background)
+            root.addChild(text)
+            root.addChild(ui)
+            root.addChild(sprites)
+            root.addChild(music)
+
+            backgroundName = QTreeWidgetItem(["name"])
+            backgroundPosition = QTreeWidgetItem(["position"])
+            backgroundScale = QTreeWidgetItem(["scale"])
+            backgroundAnimation = QTreeWidgetItem(["animation"])
+            
+            background.addChild(backgroundName)
+            background.addChild(backgroundPosition)
+            background.addChild(backgroundScale)
+            background.addChild(backgroundAnimation)
+
+            animationTime = QTreeWidgetItem(["time"])
+            animationPosition = QTreeWidgetItem(["position"])
+            animationScale = QTreeWidgetItem(["scale"])
+
+            if data[key]["background"]["animation"]:
+                backgroundAnimation.addChild(animationTime)
+                backgroundAnimation.addChild(animationPosition)
+                backgroundAnimation.addChild(animationScale)
+            
+            textCharaName = QTreeWidgetItem(["Character name"])
+            textText = QTreeWidgetItem(["text"])
+
+            text.addChild(textCharaName)
+            text.addChild(textText)
+
+            uiTime = QTreeWidgetItem(["times of day"])
+            uiChapter = QTreeWidgetItem(["chapter"])
+            
+            ui.addChild(uiTime)
+            ui.addChild(uiChapter)
+
+            if data[key]["sprites"]["count"] > 0:
+                spriteArr = []
+                for v in range(data[key]["sprites"]["count"]):
+                    spriteArr.append(QTreeWidgetItem(["sptrite " + str(v+1)]))
+                    sprites.addChild(spriteArr[v])
+
+                    spriteArr[v].addChild(QTreeWidgetItem(["name"]))
+                    spriteArr[v].addChild(QTreeWidgetItem(["pose"]))
+                    spriteArr[v].addChild(QTreeWidgetItem(["position"]))
+                    spriteArr[v].addChild(QTreeWidgetItem(["scale"]))
+                    
+
+                    if data[key]["sprites"][str(v+1)]["animation"] == True:
+                        animation_item = QTreeWidgetItem(["animation"])
+                        spriteArr[v].addChild(animation_item)
+                        animation_item.addChild(QTreeWidgetItem(["time"]))
+                        animation_item.addChild(QTreeWidgetItem(["position"]))
+                        animation_item.addChild(QTreeWidgetItem(["scale"]))
+                    else:
+                        spriteArr[v].addChild(QTreeWidgetItem(["animation"]))
+                    
+            #music #TODO
+    def inspectorDockWidget(self):
+        dockWidget = QDockWidget("Elements Inspector", self)
+        listWidget = QListWidget()
+        dockWidget.setWidget(listWidget)
+                    
 
 app = QApplication(sys.argv)
 window = MainWindow()
-window.barMenu()
-window.TollBar()
-window.createCanvas()
 window.show()
-
 app.setStyleSheet(Path("main/style.css").read_text())
 sys.exit(app.exec())

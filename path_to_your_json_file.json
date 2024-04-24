@@ -1,7 +1,7 @@
 {
     "0":{
         "background": {
-            "name": 0,
+            "name": "asd",
             "position":{
                 "x": 0,
                 "y": 0
@@ -10,80 +10,29 @@
                 "x": 1.25,
                 "y": 1.25
             },
-            "animation": false,
-            "animationSettings":{
-                "time": 1,
-                "position":{
-                    "x": 500,
-                    "y": 100
-                },
-                "scale":{
-                    "x": 1,
-                    "y": 1
-                }
-            }
+            "animation": false
         },
         
         "text":{
-            "isGg": true,
+            "charaName": "name",
             "text": "я обдул ауауаыуаыафцаыуапы"
         },
+        
+        "ui": {
+            "time": "Day",
+            "chapter": " Prologue"
+        },
+        
         "sprites":{
-            "count": 2,
-            "1":{
-                "name": "Simon",
-                "pose": "basic",
-                "position":{
-                    "x": 0,
-                    "y": 0
-                },
-                "scale":{
-                    "x": 0.5,
-                    "y": 0.5
-                },
-                "animation": true,
-                "animationSettings":{
-                    "time": 5,
-                    "position":{
-                        "x": 500,
-                        "y": 0
-                    },
-                    "scale":{
-                        "x": 0.5,
-                        "y": 0.5
-                    }   
+            "count": 1,
+                "1": {
+                "animation": false
                 }
-            },
-            "2":{
-                "name": "Simon",
-                "pose": "basic",
-                "position":{
-                    "x": 500,
-                    "y": 0
-                },
-                "scale":{
-                    "x": 0.5,
-                    "y": 0.5
-                },
-                "animation": true,
-                "animationSettings":{
-                    "time": 5,
-                    "position":{
-                        "x": 1000,
-                        "y": 0
-                    },
-                    "scale":{
-                        "x": 0.5,
-                        "y": 0.5
-                    }
-                }
-            }
-
         }
     },
     "1":{
         "background": {
-            "name": 0,
+            "name": "asd",
             "position":{
                 "x": 0,
                 "y": 0
@@ -92,24 +41,19 @@
                 "x": 1.25,
                 "y": 1.25
             },
-            "animation": false,
-            "animationSettings":{
-                "time": 1,
-                "position":{
-                    "x": 500,
-                    "y": 100
-                },
-                "scale":{
-                    "x": 1,
-                    "y": 1
-                }
-            }
+            "animation": true
         },
         
         "text":{
-            "isGg": true,
+            "charaName": "name",
             "text": "я обдул ауауаыуаыафцаыуапы"
         },
+        
+        "ui": {
+            "time": "Day",
+            "chapter": " Prologue"
+        },
+        
         "sprites":{
             "count": 2,
             "1":{
@@ -117,7 +61,7 @@
                 "pose": "basic",
                 "position":{
                     "x": 0,
-                    "y": 0
+                    "y": 300
                 },
                 "scale":{
                     "x": 0.5,
@@ -128,7 +72,7 @@
                     "time": 5,
                     "position":{
                         "x": 500,
-                        "y": 0
+                        "y": 300
                     },
                     "scale":{
                         "x": 0.5,
@@ -141,7 +85,7 @@
                 "pose": "basic",
                 "position":{
                     "x": 500,
-                    "y": 0
+                    "y": 300
                 },
                 "scale":{
                     "x": 0.5,
@@ -152,7 +96,7 @@
                     "time": 5,
                     "position":{
                         "x": 1000,
-                        "y": 0
+                        "y": 300
                     },
                     "scale":{
                         "x": 0.5,
