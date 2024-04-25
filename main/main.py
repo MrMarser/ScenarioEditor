@@ -3,7 +3,7 @@ import sys
 import os
 import json
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMainWindow, QGroupBox, QVBoxLayout, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QGroupBox, QVBoxLayout, QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush
 from PyQt6.QtCore import Qt
 
@@ -159,7 +159,7 @@ class MainWindow(QMainWindow):
             self.path.append(item.text(0))  
             item = item.parent()  
         self.path.reverse() 
-        self.inspectorInit(self.path)
+        self.inspectorLoad(self.path)
         
 
     def dockTreeWidget(self, data):
@@ -236,25 +236,34 @@ class MainWindow(QMainWindow):
                     
             #music #TODO
     def inspectorDockWidget(self):
-        dockWidget = QDockWidget("Element Inspector", self)
-        groupBox = QGroupBox("")
-        dockWidget.setWidget(groupBox)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dockWidget)
-        groupBox.setStyleSheet("""
-            QHeaderView::section {
+        self.inspectorDock = QDockWidget("Инспектор элементов", self)
+        self.inspectorGroup = QGroupBox("")
+        self.inspectorDock.setWidget(self.inspectorGroup)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.inspectorDock)
+        self.inspectorGroup.setLayout(QVBoxLayout())  # Инициализация макета для содержимого
+        self.inspectorGroup.setStyleSheet("""
+            QGroupBox {
                 background-color: rgb(50, 70, 90); 
                 color: white; 
                 font-size: 14px; 
             }
         """)
-        dockWidget.setStyleSheet("""
+        self.inspectorDock.setStyleSheet("""
             background-color: rgb(30, 40, 50);
             color: white;
         """)
 
-        
-    def inspectorInit(self, path):
-        print(path)
+    def inspectorLoad(self, path):
+        currentLayout = self.inspectorGroup.layout()
+        while currentLayout.count():
+            child = currentLayout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+        for p in path:
+            label = QLabel(f"Инспекция: {p}")
+            currentLayout.addWidget(label)
+
                     
 
 app = QApplication(sys.argv)
