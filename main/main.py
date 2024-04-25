@@ -3,11 +3,14 @@ import sys
 import os
 import json
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QListWidget, QMainWindow, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
-from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QColor, QPen, QBrush
+from PyQt6.QtWidgets import QApplication, QMainWindow, QGroupBox, QVBoxLayout, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
+from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush
 from PyQt6.QtCore import Qt
 
 class MainWindow(QMainWindow):
+
+    
+
 
     def __init__(self):
         super().__init__()
@@ -151,11 +154,13 @@ class MainWindow(QMainWindow):
         self.treeWidget.itemClicked.connect(self.onItemClicked)
 
     def onItemClicked(self, item):
-        path = []
+        self.path = []
         while item is not None:
-            path.append(item.text(0))  
+            self.path.append(item.text(0))  
             item = item.parent()  
-        path.reverse()  
+        self.path.reverse() 
+        self.inspectorInit(self.path)
+        
 
     def dockTreeWidget(self, data):
         self.treeWidget.clear()
@@ -231,13 +236,30 @@ class MainWindow(QMainWindow):
                     
             #music #TODO
     def inspectorDockWidget(self):
-        dockWidget = QDockWidget("Elements Inspector", self)
-        listWidget = QListWidget()
-        dockWidget.setWidget(listWidget)
+        dockWidget = QDockWidget("Element Inspector", self)
+        groupBox = QGroupBox("")
+        dockWidget.setWidget(groupBox)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dockWidget)
+        groupBox.setStyleSheet("""
+            QHeaderView::section {
+                background-color: rgb(50, 70, 90); 
+                color: white; 
+                font-size: 14px; 
+            }
+        """)
+        dockWidget.setStyleSheet("""
+            background-color: rgb(30, 40, 50);
+            color: white;
+        """)
+
+        
+    def inspectorInit(self, path):
+        print(path)
                     
 
 app = QApplication(sys.argv)
 window = MainWindow()
 window.show()
 app.setStyleSheet(Path("main/style.css").read_text())
+
 sys.exit(app.exec())
