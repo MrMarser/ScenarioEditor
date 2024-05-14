@@ -54,9 +54,8 @@ class MainWindow(QMainWindow):
         if fileName:
             try:
                 with open(fileName, "r", encoding="utf-8") as file:
-                    content = json.load(file)
-                    print(content)
-                    self.dockTreeWidget(content)
+                    self.content = json.load(file)
+                    self.dockTreeWidget(self.content)
             except Exception as e:
                 QMessageBox.critical(self, "Load Error", f"Failed to load file: {e}")
 
@@ -209,9 +208,11 @@ class MainWindow(QMainWindow):
 
             uiTime = QTreeWidgetItem(["times of day"])
             uiChapter = QTreeWidgetItem(["chapter"])
+            uiCharaEmotion = QTreeWidgetItem(["chara emotion"])
             
             ui.addChild(uiTime)
             ui.addChild(uiChapter)
+            ui.addChild(uiCharaEmotion)
 
             if data[key]["sprites"]["count"] > 0:
                 spriteArr = []
@@ -233,10 +234,15 @@ class MainWindow(QMainWindow):
                         animation_item.addChild(QTreeWidgetItem(["scale"]))
                     else:
                         spriteArr[v].addChild(QTreeWidgetItem(["animation"]))
+
+
+            
+
+            
                     
             #music #TODO
     def inspectorDockWidget(self):
-        self.inspectorDock = QDockWidget("Инспектор элементов", self)
+        self.inspectorDock = QDockWidget("Element inspector", self)
         self.inspectorGroup = QGroupBox("")
         self.inspectorDock.setWidget(self.inspectorGroup)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.inspectorDock)
@@ -254,17 +260,12 @@ class MainWindow(QMainWindow):
         """)
 
     def inspectorLoad(self, path):
-        currentLayout = self.inspectorGroup.layout()
-        while currentLayout.count():
-            child = currentLayout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
+        layout = self.inspectorGroup.layout()
+        key = path[0]
+        data = self.content
+        
 
-        for p in path:
-            label = QLabel(f"Инспекция: {p}")
-            currentLayout.addWidget(label)
-
-                    
+            
 
 app = QApplication(sys.argv)
 window = MainWindow()
