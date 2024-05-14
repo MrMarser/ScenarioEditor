@@ -263,6 +263,7 @@ class MainWindow(QMainWindow):
         layout = self.inspectorGroup.layout()
         key = path[0]
         data = self.content
+        print(data)
         
 
             
