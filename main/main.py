@@ -3,9 +3,19 @@ import sys
 import os
 import json
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMainWindow, QGroupBox, QVBoxLayout, QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QDialog, QGroupBox, QVBoxLayout, QFormLayout, QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush
 from PyQt6.QtCore import Qt
+
+
+class backgroundWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.initUi()
+    def initUi(self):
+        self.setWindowTitle("background")
+        self.resize(800, 800)
+
 
 class MainWindow(QMainWindow):
 
@@ -76,27 +86,16 @@ class MainWindow(QMainWindow):
         playAnimation = QAction("play Animation", self)
         toolbar.addAction(playAnimation)
 
-        selectBackground.triggered.connect(self.showBackgroundMenu)
+
+
+        selectBackground.triggered.connect(self.openBackgroundWindow)
         # More TODO
 
         self.toolbar = toolbar
 
-    def showBackgroundMenu(self):
-        menu = QMenu()
-        imageActions = []
-        imageFiles = self.images()
-        backgroundFolder = "backgrounds/"
-        for imageFile in imageFiles:
-            action = QAction(QIcon(backgroundFolder + imageFile), imageFile, self)
-            imageActions.append(action)
-            menu.addAction(action)
-
-        action = self.sender()
-
-        if self.toolbar:
-            pos = self.toolbar.actionGeometry(action).bottomLeft()
-            pos = self.toolbar.mapToGlobal(pos)
-            menu.exec(pos)
+    def openBackgroundWindow(self):
+        self.backgroundwindow = backgroundWindow()
+        self.backgroundwindow.exec()
 
     def images(self):
         photos = []
@@ -145,7 +144,7 @@ class MainWindow(QMainWindow):
             }
         """)
         dockWidget.setStyleSheet("""
-            background-color: rgb(30, 40, 50);
+            background-color: rgb(50, 70, 90);
             color: white;
         """)
 
@@ -255,7 +254,7 @@ class MainWindow(QMainWindow):
             }
         """)
         self.inspectorDock.setStyleSheet("""
-            background-color: rgb(30, 40, 50);
+            background-color: rgb(50, 70, 90);
             color: white;
         """)
 
@@ -263,10 +262,15 @@ class MainWindow(QMainWindow):
         layout = self.inspectorGroup.layout()
         key = path[0]
         data = self.content
+        formLayout = QFormLayout()
+
+        
+
         print(data)
         
 
-            
+
+
 
 app = QApplication(sys.argv)
 window = MainWindow()
