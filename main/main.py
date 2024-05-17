@@ -16,6 +16,9 @@ class backgroundWindow(QDialog):
         self.setWindowTitle("background")
         self.resize(800, 800)
 
+        mainLayout = QVBoxLayout
+        #objectsLayout
+
 
 class MainWindow(QMainWindow):
 
@@ -39,7 +42,29 @@ class MainWindow(QMainWindow):
     def barMenu(self):
         menu = self.menuBar()
         fileMenu = menu.addMenu("&File")
-        menu.setStyleSheet(Path("main/menuBar.css").read_text())
+        menu.setStyleSheet("""
+            QMenuBar {
+                font-size: 15px;
+                background-color: rgb(50, 70, 90);
+                color: white;
+            }
+            QMenuBar::item:selected { 
+                background-color: black;
+                color: white; 
+            }
+            QMenu {
+                font-size: 15px;
+                background-color: rgb(50, 70, 90);
+            }
+            QMenu::item {
+                background-color: transparent;
+                color: white;
+            }
+            QMenu::item:selected { 
+                background-color: black;
+                color: white; 
+            }
+        """)
 
         openAction = QAction("&Open", self)
         fileMenu.addAction(openAction)
@@ -140,7 +165,7 @@ class MainWindow(QMainWindow):
             QHeaderView::section {
                 background-color: rgb(50, 70, 90); 
                 color: white; 
-                font-size: 14px; 
+                font-size: 14px;
             }
         """)
         dockWidget.setStyleSheet("""
@@ -275,6 +300,5 @@ class MainWindow(QMainWindow):
 app = QApplication(sys.argv)
 window = MainWindow()
 window.show()
-app.setStyleSheet(Path("main/style.css").read_text())
 
 sys.exit(app.exec())
