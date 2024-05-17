@@ -43,24 +43,24 @@ class MainWindow(QMainWindow):
         menu = self.menuBar()
         fileMenu = menu.addMenu("&File")
         menu.setStyleSheet("""
-            QMenuBar {
+            QMenuBar{
                 font-size: 15px;
                 background-color: rgb(50, 70, 90);
                 color: white;
             }
-            QMenuBar::item:selected { 
+            QMenuBar::item:selected{ 
                 background-color: black;
                 color: white; 
             }
-            QMenu {
+            QMenu{
                 font-size: 15px;
                 background-color: rgb(50, 70, 90);
             }
-            QMenu::item {
+            QMenu::item{
                 background-color: transparent;
                 color: white;
             }
-            QMenu::item:selected { 
+            QMenu::item:selected{ 
                 background-color: black;
                 color: white; 
             }
