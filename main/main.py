@@ -3,8 +3,8 @@ import sys
 import os
 import json
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMainWindow, QDialog, QGroupBox, QVBoxLayout, QFormLayout, QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
-from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush
+from PyQt6.QtWidgets import QApplication, QMainWindow, QScrollArea, QDialog ,QWidget, QGridLayout, QGroupBox, QVBoxLayout, QFormLayout, QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
+from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush, QPixmap
 from PyQt6.QtCore import Qt
 
 
@@ -12,13 +12,69 @@ class backgroundWindow(QDialog):
     def __init__(self):
         super().__init__()
         self.initUi()
+    
     def initUi(self):
-        self.setWindowTitle("background")
+        self.setWindowTitle("Background")
         self.resize(800, 800)
 
-        mainLayout = QVBoxLayout
-        #objectsLayout
+        mainLayout = QVBoxLayout()
+        imageLayout = QGridLayout()
 
+        # Create a scroll area to hold the image grid layout
+        scrollArea = QScrollArea()
+        scrollAreaWidget = QWidget()
+        scrollAreaWidget.setLayout(imageLayout)
+        scrollArea.setWidget(scrollAreaWidget)
+        scrollArea.setWidgetResizable(True)
+
+        mainLayout.addWidget(scrollArea)
+        self.setLayout(mainLayout)
+
+        photos = self.images()
+        self.populateGrid(imageLayout, photos)
+
+    def images(self):
+        photos = []
+        file_dir = "backgrounds/"
+        for file_name in os.listdir(file_dir):
+            file_path = os.path.join(file_dir, file_name)
+            if os.path.isfile(file_path) and file_name.lower().endswith(".png"):
+                photos.append((file_name, file_path))
+        return photos
+
+    def populateGrid(self, layout, photos):
+        row = 0
+        col = 0
+        max_cols = 2  # Set the maximum number of columns in the grid
+
+        for file_name, file_path in photos:
+            pixmap = QPixmap(file_path)
+            imageLabel = QLabel()
+            imageLabel.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            imageLabel.setScaledContents(False)
+            imageLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            imageLabel.mousePressEvent = lambda event, photo=file_path: self.onImageClicked(event, photo)
+
+            textLabel = QLabel(file_name)
+            textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            vbox = QVBoxLayout()
+            vbox.addWidget(imageLabel)
+            vbox.addWidget(textLabel)
+
+            containerWidget = QWidget()
+            containerWidget.setLayout(vbox)
+
+            layout.addWidget(containerWidget, row, col)
+
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
+
+    def onImageClicked(self, event, photo):
+        print(f"Image clicked: {photo}")
+        self.accept()  # This will close the dialog
 
 class MainWindow(QMainWindow):
 
@@ -122,14 +178,7 @@ class MainWindow(QMainWindow):
         self.backgroundwindow = backgroundWindow()
         self.backgroundwindow.exec()
 
-    def images(self):
-        photos = []
-        file_dir = "backgrounds/"
-        for file_name in os.listdir(file_dir):
-            file_path = os.path.join(file_dir, file_name)
-            if os.path.isfile(file_path) and file_name.lower().endswith(".png"):
-                photos.append(file_name)
-        return photos
+    
 
     def createCanvas(self):
         scene = QGraphicsScene()
