@@ -1,29 +1,29 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
+import subprocess
 import json
-from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMainWindow, QScrollArea, QDialog ,QWidget, QGridLayout, QGroupBox, QVBoxLayout, QFormLayout, QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QScrollArea, QDialog, QWidget, QGridLayout, QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush, QPixmap
 from PyQt6.QtCore import Qt
 
+BACKGROUND_FOLDER = "backgrounds/"
 
-class backgroundWindow(QDialog):
+class BackgroundWindow(QDialog):
     def __init__(self):
         super().__init__()
         self.initUi()
-    
+
     def initUi(self):
         self.setWindowTitle("Background")
         self.resize(800, 800)
 
-        mainLayout = QVBoxLayout()
-        imageLayout = QGridLayout()
+        mainLayout = QVBoxLayout(self)
+        self.imageLayout = QGridLayout()
 
-        # Create a scroll area to hold the image grid layout
-        scrollArea = QScrollArea()
+        scrollArea = QScrollArea(self)
         scrollAreaWidget = QWidget()
-        scrollAreaWidget.setLayout(imageLayout)
+        scrollAreaWidget.setLayout(self.imageLayout)
         scrollArea.setWidget(scrollAreaWidget)
         scrollArea.setWidgetResizable(True)
 
@@ -31,29 +31,66 @@ class backgroundWindow(QDialog):
         self.setLayout(mainLayout)
 
         photos = self.images()
-        self.populateGrid(imageLayout, photos)
+        self.populateGrid(self.imageLayout, photos)
+
+        buttonLayout = QHBoxLayout()
+        buttonContainer = QWidget()
+        buttonContainer.setLayout(buttonLayout)
+        mainLayout.addWidget(buttonContainer)
+
+        backButton = QPushButton("Back", self)
+        openBackgroundFolder = QPushButton("Open background folder", self)
+        refreshButton = QPushButton("Refresh", self)
+
+        buttonLayout.addWidget(backButton)
+        buttonLayout.addWidget(openBackgroundFolder)
+        buttonLayout.addWidget(refreshButton)
+
+        backButton.clicked.connect(self.onBackButton)
+        openBackgroundFolder.clicked.connect(self.onOpenBackgroundFolder)
+        refreshButton.clicked.connect(self.onRefreshButton)
+
+    def onBackButton(self):
+        self.accept()
+
+    def onOpenBackgroundFolder(self):
+        if os.path.exists(BACKGROUND_FOLDER):
+            if os.name == 'nt':
+                os.startfile(BACKGROUND_FOLDER)
+            elif os.name == 'posix':
+                subprocess.call(['open', BACKGROUND_FOLDER] if sys.platform == 'darwin' else ['xdg-open', BACKGROUND_FOLDER])
+
+    def onRefreshButton(self):
+        self.photos = self.images()
+        self.populateGrid(self.imageLayout, self.photos)
 
     def images(self):
         photos = []
-        file_dir = "backgrounds/"
-        for file_name in os.listdir(file_dir):
-            file_path = os.path.join(file_dir, file_name)
+        for file_name in os.listdir(BACKGROUND_FOLDER):
+            file_path = os.path.join(BACKGROUND_FOLDER, file_name)
             if os.path.isfile(file_path) and file_name.lower().endswith(".png"):
                 photos.append((file_name, file_path))
         return photos
 
-    def populateGrid(self, layout, photos):
-        row = 0
-        col = 0
-        max_cols = 2  # Set the maximum number of columns in the grid
+    def clearLayout(self, layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            else:
+                self.clearLayout(item.layout())
 
+    def populateGrid(self, layout, photos):
+        row, col, max_cols = 0, 0, 2
+        self.clearLayout(layout)
         for file_name, file_path in photos:
             pixmap = QPixmap(file_path)
             imageLabel = QLabel()
             imageLabel.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             imageLabel.setScaledContents(False)
             imageLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            imageLabel.mousePressEvent = lambda event, photo=file_path: self.onImageClicked(event, photo)
+            imageLabel.mousePressEvent = self.onImageClicked(file_path)
 
             textLabel = QLabel(file_name)
             textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -72,15 +109,13 @@ class backgroundWindow(QDialog):
                 col = 0
                 row += 1
 
-    def onImageClicked(self, event, photo):
-        print(f"Image clicked: {photo}")
-        self.accept()  # This will close the dialog
+    def onImageClicked(self, photo):
+        def handler(event):
+            print(f"Image clicked: {photo}")
+            self.accept()
+        return handler
 
 class MainWindow(QMainWindow):
-
-    
-
-
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Scenario Editor")
@@ -88,7 +123,7 @@ class MainWindow(QMainWindow):
         self.showMaximized()
         self.createCanvas()
         self.barMenu()
-        self.TollBar()
+        self.toolbar()
         self.treeWidget = QTreeWidget()
         self.treeWidget.setHeaderHidden(True)
         self.setupDockWidget()
@@ -99,26 +134,26 @@ class MainWindow(QMainWindow):
         menu = self.menuBar()
         fileMenu = menu.addMenu("&File")
         menu.setStyleSheet("""
-            QMenuBar{
+            QMenuBar {
                 font-size: 15px;
                 background-color: rgb(50, 70, 90);
                 color: white;
             }
-            QMenuBar::item:selected{ 
+            QMenuBar::item:selected {
                 background-color: black;
-                color: white; 
+                color: white;
             }
-            QMenu{
+            QMenu {
                 font-size: 15px;
                 background-color: rgb(50, 70, 90);
             }
-            QMenu::item{
+            QMenu::item {
                 background-color: transparent;
                 color: white;
             }
-            QMenu::item:selected{ 
+            QMenu::item:selected {
                 background-color: black;
-                color: white; 
+                color: white;
             }
         """)
 
@@ -150,24 +185,36 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Load Error", f"Failed to load file: {e}")
 
-    def TollBar(self):
+    def toolbar(self):
         toolbar = QToolBar("Tool bar")
         self.addToolBar(toolbar)
-        toolbar.setStyleSheet("color: white; font-size: 15px")
+        toolbar.setStyleSheet("""
+            QToolBar {
+                color: white;
+            }
+            QToolButton {
+                font-size: 15px;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+            }
+            QToolButton:hover {
+                background: white;
+                color: black;
+            }
+        """)
 
         selectBackground = QAction("Background", self)
-        toolbar.addAction(selectBackground) 
+        toolbar.addAction(selectBackground)
 
-        addSprite = QAction("add Sprite", self)
+        addSprite = QAction("Add Sprite", self)
         toolbar.addAction(addSprite)
 
-        newFrame = QAction("new Frame", self)
+        newFrame = QAction("New Frame", self)
         toolbar.addAction(newFrame)
 
-        playAnimation = QAction("play Animation", self)
+        playAnimation = QAction("Play Animation", self)
         toolbar.addAction(playAnimation)
-
-
 
         selectBackground.triggered.connect(self.openBackgroundWindow)
         # More TODO
@@ -175,10 +222,8 @@ class MainWindow(QMainWindow):
         self.toolbar = toolbar
 
     def openBackgroundWindow(self):
-        self.backgroundwindow = backgroundWindow()
+        self.backgroundwindow = BackgroundWindow()
         self.backgroundwindow.exec()
-
-    
 
     def createCanvas(self):
         scene = QGraphicsScene()
@@ -228,18 +273,17 @@ class MainWindow(QMainWindow):
     def onItemClicked(self, item):
         self.path = []
         while item is not None:
-            self.path.append(item.text(0))  
-            item = item.parent()  
-        self.path.reverse() 
+            self.path.append(item.text(0))
+            item = item.parent()
+        self.path.reverse()
         self.inspectorLoad(self.path)
-        
 
     def dockTreeWidget(self, data):
         self.treeWidget.clear()
         self.loadTreeItems(data)
 
     def loadTreeItems(self, data):
-        for key, _ in data.items():
+        for key, value in data.items():
             root = QTreeWidgetItem(self.treeWidget, [str(key)])
             self.treeWidget.addTopLevelItem(root)
             background = QTreeWidgetItem(["background"])
@@ -258,7 +302,7 @@ class MainWindow(QMainWindow):
             backgroundPosition = QTreeWidgetItem(["position"])
             backgroundScale = QTreeWidgetItem(["scale"])
             backgroundAnimation = QTreeWidgetItem(["animation"])
-            
+
             background.addChild(backgroundName)
             background.addChild(backgroundPosition)
             background.addChild(backgroundScale)
@@ -268,11 +312,11 @@ class MainWindow(QMainWindow):
             animationPosition = QTreeWidgetItem(["position"])
             animationScale = QTreeWidgetItem(["scale"])
 
-            if data[key]["background"]["animation"]:
+            if value["background"].get("animation"):
                 backgroundAnimation.addChild(animationTime)
                 backgroundAnimation.addChild(animationPosition)
                 backgroundAnimation.addChild(animationScale)
-            
+
             textCharaName = QTreeWidgetItem(["Character name"])
             textText = QTreeWidgetItem(["text"])
 
@@ -282,24 +326,23 @@ class MainWindow(QMainWindow):
             uiTime = QTreeWidgetItem(["times of day"])
             uiChapter = QTreeWidgetItem(["chapter"])
             uiCharaEmotion = QTreeWidgetItem(["chara emotion"])
-            
+
             ui.addChild(uiTime)
             ui.addChild(uiChapter)
             ui.addChild(uiCharaEmotion)
 
-            if data[key]["sprites"]["count"] > 0:
+            if value["sprites"]["count"] > 0:
                 spriteArr = []
-                for v in range(data[key]["sprites"]["count"]):
-                    spriteArr.append(QTreeWidgetItem(["sptrite " + str(v+1)]))
+                for v in range(value["sprites"]["count"]):
+                    spriteArr.append(QTreeWidgetItem(["sprite " + str(v + 1)]))
                     sprites.addChild(spriteArr[v])
 
                     spriteArr[v].addChild(QTreeWidgetItem(["name"]))
                     spriteArr[v].addChild(QTreeWidgetItem(["pose"]))
                     spriteArr[v].addChild(QTreeWidgetItem(["position"]))
                     spriteArr[v].addChild(QTreeWidgetItem(["scale"]))
-                    
 
-                    if data[key]["sprites"][str(v+1)]["animation"] == True:
+                    if value["sprites"][str(v + 1)]["animation"] == True:
                         animation_item = QTreeWidgetItem(["animation"])
                         spriteArr[v].addChild(animation_item)
                         animation_item.addChild(QTreeWidgetItem(["time"]))
@@ -308,23 +351,17 @@ class MainWindow(QMainWindow):
                     else:
                         spriteArr[v].addChild(QTreeWidgetItem(["animation"]))
 
-
-            
-
-            
-                    
-            #music #TODO
     def inspectorDockWidget(self):
         self.inspectorDock = QDockWidget("Element inspector", self)
         self.inspectorGroup = QGroupBox("")
         self.inspectorDock.setWidget(self.inspectorGroup)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.inspectorDock)
-        self.inspectorGroup.setLayout(QVBoxLayout())  # Инициализация макета для содержимого
+        self.inspectorGroup.setLayout(QVBoxLayout())
         self.inspectorGroup.setStyleSheet("""
             QGroupBox {
-                background-color: rgb(50, 70, 90); 
-                color: white; 
-                font-size: 14px; 
+                background-color: rgb(50, 70, 90);
+                color: white;
+                font-size: 14px;
             }
         """)
         self.inspectorDock.setStyleSheet("""
@@ -337,17 +374,9 @@ class MainWindow(QMainWindow):
         key = path[0]
         data = self.content
         formLayout = QFormLayout()
-
-        
-
-        print(data)
-        
-
-
-
+        # Continue implementing form layout loading logic
 
 app = QApplication(sys.argv)
 window = MainWindow()
 window.show()
-
 sys.exit(app.exec())
