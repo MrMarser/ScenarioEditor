@@ -12,7 +12,8 @@ from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush, QPi
 from PyQt6.QtCore import Qt
 
 BACKGROUND_FOLDER = "backgrounds/"
-SPRITES_FOLDER = "sprites/basic"
+SPRITES_FOLDER =  "sprites/basic"
+
 
 
 class SpriteWindow(QDialog):
@@ -45,15 +46,15 @@ class SpriteWindow(QDialog):
         mainLayout.addWidget(buttonContainer)
 
         backButton = QPushButton("Back", self)
-        openBackgroundFolder = QPushButton("Open background folder", self)
+        openSpritesFolder = QPushButton("Open sprites folder", self)
         refreshButton = QPushButton("Refresh", self)
 
         buttonLayout.addWidget(backButton)
-        buttonLayout.addWidget(openBackgroundFolder)
+        buttonLayout.addWidget(openSpritesFolder)
         buttonLayout.addWidget(refreshButton)
 
         backButton.clicked.connect(self.onBackButton)
-        openBackgroundFolder.clicked.connect(self.onOpenBackgroundFolder)
+        openSpritesFolder.clicked.connect(self.onOpenSpritesFolder)
         refreshButton.clicked.connect(self.onRefreshButton)
 
     def onBackButton(self):
@@ -65,12 +66,26 @@ class SpriteWindow(QDialog):
             self.photos = self.images()
             self.populateGrid(self.imageLayout, self.photos)
 
-    def onOpenBackgroundFolder(self):
-        if os.path.exists(SPRITES_FOLDER):
-            if os.name == 'nt':
-                os.startfile(SPRITES_FOLDER)
-            elif os.name == 'posix':
-                subprocess.call(['open', SPRITES_FOLDER] if sys.platform == 'darwin' else ['xdg-open', SPRITES_FOLDER])
+    def onOpenSpritesFolder(self):
+        folder_path = os.path.abspath(SPRITES_FOLDER)
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Checking if folder exists: {folder_path}")
+
+        if os.path.exists(folder_path):
+            try:
+                if os.name == 'nt':  # Windows
+                    os.startfile(folder_path)
+                elif os.name == 'posix':
+                    if sys.platform == 'darwin':  # macOS
+                        subprocess.call(['open', folder_path])
+                    else:  # Linux
+                        subprocess.call(['xdg-open', folder_path])
+            except Exception as e:
+                print(f"Failed to open folder: {e}")
+        else:
+            print(f"Folder does not exist: {folder_path}")
+
+
 
     def onRefreshButton(self):
         self.photos = self.images()
@@ -94,7 +109,7 @@ class SpriteWindow(QDialog):
                 self.clearLayout(item.layout())
 
     def populateGrid(self, layout, photos):
-        row, col, max_cols = 0, 0, 2
+        row, col, max_cols = 0, 0, 3
         self.clearLayout(layout)
         for file_name, file_path in photos:
             containerWidget = QWidget()
@@ -179,12 +194,23 @@ class BackgroundWindow(QDialog):
         self.accept()
 
     def onOpenBackgroundFolder(self):
-        if os.path.exists(BACKGROUND_FOLDER):
-            if os.name == 'nt':
-                os.startfile(BACKGROUND_FOLDER)
-            elif os.name == 'posix':
-                subprocess.call(['open', BACKGROUND_FOLDER] if sys.platform == 'darwin' else ['xdg-open', BACKGROUND_FOLDER])
+        folder_path = os.path.abspath(BACKGROUND_FOLDER)
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Checking if folder exists: {folder_path}")
 
+        if os.path.exists(folder_path):
+            try:
+                if os.name == 'nt':  # Windows
+                    os.startfile(folder_path)
+                elif os.name == 'posix':
+                    if sys.platform == 'darwin':  # macOS
+                        subprocess.call(['open', folder_path])
+                    else:  # Linux
+                        subprocess.call(['xdg-open', folder_path])
+            except Exception as e:
+                print(f"Failed to open folder: {e}")
+        else:
+            print(f"Folder does not exist: {folder_path}")
     def onRefreshButton(self):
         self.photos = self.images()
         self.populateGrid(self.imageLayout, self.photos)
@@ -314,6 +340,7 @@ class MainWindow(QMainWindow):
         self.addToolBar(toolbar)
         toolbar.setStyleSheet("""
             QToolBar {
+                background-color: rgb(30, 40, 50);
                 color: white;
             }
             QToolButton {
@@ -501,10 +528,26 @@ class MainWindow(QMainWindow):
 
     def inspectorLoad(self, path):
         layout = self.inspectorGroup.layout()
+        # Очистка предыдущих виджетов
+        for i in reversed(range(layout.count())):
+            widget = layout.itemAt(i).widget()
+            if widget is not None:
+                widget.deleteLater()
+        
         key = path[0]
         data = self.content
         formLayout = QFormLayout()
-        # Continue implementing form layout loading logic
+        scrollArea = QScrollArea()
+        scrollAreaWidget = QWidget()
+        scrollAreaWidget.setLayout(formLayout)
+        scrollArea.setWidget(scrollAreaWidget)
+        scrollArea.setWidgetResizable(True)
+
+        layout.addWidget(scrollArea)
+
+        
+
+
 
 app = QApplication(sys.argv)
 window = MainWindow()
