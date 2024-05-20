@@ -3,11 +3,136 @@ import sys
 import os
 import subprocess
 import json
-from PyQt6.QtWidgets import QApplication, QMainWindow, QScrollArea, QDialog, QWidget, QGridLayout, QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QMessageBox
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QScrollArea, QDialog, QWidget, 
+                             QGridLayout, QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, 
+                             QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, 
+                             QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, 
+                             QGraphicsRectItem, QMessageBox)
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush, QPixmap
 from PyQt6.QtCore import Qt
 
 BACKGROUND_FOLDER = "backgrounds/"
+SPRITES_FOLDER = "sprites/basic"
+
+
+class SpriteWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.initUi()
+    
+    def initUi(self):
+        self.setWindowTitle("Sprite")
+        self.resize(800, 800)
+
+        mainLayout = QVBoxLayout(self)
+        self.imageLayout = QGridLayout()
+
+        scrollArea = QScrollArea(self)
+        scrollAreaWidget = QWidget()
+        scrollAreaWidget.setLayout(self.imageLayout)
+        scrollArea.setWidget(scrollAreaWidget)
+        scrollArea.setWidgetResizable(True)
+        
+        mainLayout.addWidget(scrollArea)
+        self.setLayout(mainLayout)
+
+        photos = self.images()
+        self.populateGrid(self.imageLayout, photos)
+
+        buttonLayout = QHBoxLayout()
+        buttonContainer = QWidget()
+        buttonContainer.setLayout(buttonLayout)
+        mainLayout.addWidget(buttonContainer)
+
+        backButton = QPushButton("Back", self)
+        openBackgroundFolder = QPushButton("Open background folder", self)
+        refreshButton = QPushButton("Refresh", self)
+
+        buttonLayout.addWidget(backButton)
+        buttonLayout.addWidget(openBackgroundFolder)
+        buttonLayout.addWidget(refreshButton)
+
+        backButton.clicked.connect(self.onBackButton)
+        openBackgroundFolder.clicked.connect(self.onOpenBackgroundFolder)
+        refreshButton.clicked.connect(self.onRefreshButton)
+
+    def onBackButton(self):
+        global SPRITES_FOLDER
+        if SPRITES_FOLDER == "sprites/basic":
+            self.accept()
+        else:
+            SPRITES_FOLDER = "sprites/basic"
+            self.photos = self.images()
+            self.populateGrid(self.imageLayout, self.photos)
+
+    def onOpenBackgroundFolder(self):
+        if os.path.exists(SPRITES_FOLDER):
+            if os.name == 'nt':
+                os.startfile(SPRITES_FOLDER)
+            elif os.name == 'posix':
+                subprocess.call(['open', SPRITES_FOLDER] if sys.platform == 'darwin' else ['xdg-open', SPRITES_FOLDER])
+
+    def onRefreshButton(self):
+        self.photos = self.images()
+        self.populateGrid(self.imageLayout, self.photos)
+
+    def images(self):
+        photos = []
+        for file_name in os.listdir(SPRITES_FOLDER):
+            file_path = os.path.join(SPRITES_FOLDER, file_name)
+            if os.path.isfile(file_path) and file_name.lower().endswith(".png"):
+                photos.append((file_name, file_path))
+        return photos
+    
+    def clearLayout(self, layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            else:
+                self.clearLayout(item.layout())
+
+    def populateGrid(self, layout, photos):
+        row, col, max_cols = 0, 0, 2
+        self.clearLayout(layout)
+        for file_name, file_path in photos:
+            containerWidget = QWidget()
+            formLayout = QFormLayout(containerWidget)
+            formLayout.setVerticalSpacing(5)
+
+            pixmap = QPixmap(file_path)
+            imageLabel = QLabel()
+            imageLabel.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            imageLabel.setScaledContents(False)
+            imageLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            imageLabel.mousePressEvent = self.onImageClicked(file_path)
+
+            textLabel = QLabel(file_name)
+            textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            formLayout.addRow(imageLabel)
+            formLayout.addRow(textLabel)
+            layout.addWidget(containerWidget, row, col)
+
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
+
+    def onImageClicked(self, file_path):
+        def handler(event):
+            global SPRITES_FOLDER
+            new_folder = os.path.join(SPRITES_FOLDER[:-5], os.path.basename(file_path)[:-4])
+            
+            if os.path.exists(new_folder):
+                SPRITES_FOLDER = new_folder
+                self.photos = self.images()
+                self.populateGrid(self.imageLayout, self.photos)
+            else:
+                print(os.path.join(SPRITES_FOLDER, os.path.basename(file_path)[:-4])) ##TODO
+                self.accept()
+        return handler
 
 class BackgroundWindow(QDialog):
     def __init__(self):
@@ -85,6 +210,10 @@ class BackgroundWindow(QDialog):
         row, col, max_cols = 0, 0, 2
         self.clearLayout(layout)
         for file_name, file_path in photos:
+            containerWidget = QWidget()
+            formLayout = QFormLayout(containerWidget)
+            formLayout.setVerticalSpacing(5)
+
             pixmap = QPixmap(file_path)
             imageLabel = QLabel()
             imageLabel.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
@@ -95,13 +224,8 @@ class BackgroundWindow(QDialog):
             textLabel = QLabel(file_name)
             textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-            vbox = QVBoxLayout()
-            vbox.addWidget(imageLabel)
-            vbox.addWidget(textLabel)
-
-            containerWidget = QWidget()
-            containerWidget.setLayout(vbox)
-
+            formLayout.addRow(imageLabel)
+            formLayout.addRow(textLabel)
             layout.addWidget(containerWidget, row, col)
 
             col += 1
@@ -217,9 +341,15 @@ class MainWindow(QMainWindow):
         toolbar.addAction(playAnimation)
 
         selectBackground.triggered.connect(self.openBackgroundWindow)
-        # More TODO
+        addSprite.triggered.connect(self.openSpriteWindow)
 
         self.toolbar = toolbar
+
+    def openSpriteWindow(self):
+        global SPRITES_FOLDER
+        SPRITES_FOLDER = "sprites/basic"
+        self.spriteWindow = SpriteWindow()
+        self.spriteWindow.exec()
 
     def openBackgroundWindow(self):
         self.backgroundwindow = BackgroundWindow()
