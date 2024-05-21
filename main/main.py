@@ -7,14 +7,134 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QScrollArea, QDialog, QW
                              QGridLayout, QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, 
                              QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, 
                              QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, 
-                             QGraphicsRectItem, QMessageBox)
+                             QGraphicsRectItem, QMessageBox, QSpinBox, QRadioButton,
+                             QComboBox, QTextEdit, QListWidget, QDoubleSpinBox,
+                             QFrame,)
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush, QPixmap
 from PyQt6.QtCore import Qt
 
 BACKGROUND_FOLDER = "backgrounds/"
 SPRITES_FOLDER =  "sprites/basic"
+MAIN_HERO_EMOTION_FOLDER = "sprites/makishiro"
+
+class SelectMainHeroEmotion(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.initUi()
+    
+    def initUi(self):
+        self.setWindowTitle("Emotion")
+        self.resize(800, 800)
+
+        mainLayout = QVBoxLayout(self)
+        self.imageLayout = QGridLayout()
+
+        scrollArea = QScrollArea(self)
+        scrollAreaWidget = QWidget()
+        scrollAreaWidget.setLayout(self.imageLayout)
+        scrollArea.setWidget(scrollAreaWidget)
+        scrollArea.setWidgetResizable(True)
+
+        mainLayout.addWidget(scrollArea)
+        self.setLayout(mainLayout)
+
+        photos = self.images()
+        self.populateGrid(self.imageLayout, photos)
+
+        buttonLayout = QHBoxLayout()
+        buttonContainer = QWidget()
+        buttonContainer.setLayout(buttonLayout)
+        mainLayout.addWidget(buttonContainer)
+
+        backButton = QPushButton("Back", self)
+        openBackgroundFolder = QPushButton("Open folder", self)
+        refreshButton = QPushButton("Refresh", self)
+
+        buttonLayout.addWidget(backButton)
+        buttonLayout.addWidget(openBackgroundFolder)
+        buttonLayout.addWidget(refreshButton)
+
+        backButton.clicked.connect(self.onBackButton)
+        openBackgroundFolder.clicked.connect(self.onOpenFolder)
+        refreshButton.clicked.connect(self.onRefreshButton)
+
+    def onBackButton(self):
+        self.accept()
+
+    def onOpenFolder(self):
+        folder_path = os.path.abspath(MAIN_HERO_EMOTION_FOLDER)
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Checking if folder exists: {folder_path}")
+
+        if os.path.exists(folder_path):
+            try:
+                if os.name == 'nt':  # Windows
+                    os.startfile(folder_path)
+                elif os.name == 'posix':
+                    if sys.platform == 'darwin':  # macOS
+                        subprocess.call(['open', folder_path])
+                    else:  # Linux
+                        subprocess.call(['xdg-open', folder_path])
+            except Exception as e:
+                print(f"Failed to open folder: {e}")
+        else:
+            print(f"Folder does not exist: {folder_path}")
+    def onRefreshButton(self):
+        self.photos = self.images()
+        self.populateGrid(self.imageLayout, self.photos)
+
+    def images(self):
+        photos = []
+        for file_name in os.listdir(MAIN_HERO_EMOTION_FOLDER):
+            file_path = os.path.join(MAIN_HERO_EMOTION_FOLDER, file_name)
+            if os.path.isfile(file_path) and file_name.lower().endswith(".png"):
+                photos.append((file_name, file_path))
+        return photos
+
+    def clearLayout(self, layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            else:
+                self.clearLayout(item.layout())
+
+    def populateGrid(self, layout, photos):
+        row, col, max_cols = 0, 0, 2
+        self.clearLayout(layout)
+        for file_name, file_path in photos:
+            containerWidget = QWidget()
+            formLayout = QFormLayout(containerWidget)
+            formLayout.setVerticalSpacing(5)
+
+            pixmap = QPixmap(file_path)
+            imageLabel = QLabel()
+            imageLabel.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            imageLabel.setScaledContents(False)
+            imageLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            imageLabel.mousePressEvent = self.onImageClicked(file_path)
+
+            textLabel = QLabel(file_name)
+            textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            formLayout.addRow(imageLabel)
+            formLayout.addRow(textLabel)
+            layout.addWidget(containerWidget, row, col)
+
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
+
+    def onImageClicked(self, photo):
+        def handler(event):
+            print(f"Image clicked: {photo}")
+            self.accept()
+        return handler
 
 
+    
 
 class SpriteWindow(QDialog):
     def __init__(self):
@@ -495,7 +615,6 @@ class MainWindow(QMainWindow):
                     sprites.addChild(spriteArr[v])
 
                     spriteArr[v].addChild(QTreeWidgetItem(["name"]))
-                    spriteArr[v].addChild(QTreeWidgetItem(["pose"]))
                     spriteArr[v].addChild(QTreeWidgetItem(["position"]))
                     spriteArr[v].addChild(QTreeWidgetItem(["scale"]))
 
@@ -544,6 +663,133 @@ class MainWindow(QMainWindow):
         scrollArea.setWidgetResizable(True)
 
         layout.addWidget(scrollArea)
+
+        background = [QPushButton("Select"), QSpinBox(), QSpinBox(), 
+                      QDoubleSpinBox(), QDoubleSpinBox(), QRadioButton("off"), 
+                      [QSpinBox(), QSpinBox(), QSpinBox(), QDoubleSpinBox(), QDoubleSpinBox()]]
+        
+        text = [QComboBox(), QTextEdit()]
+
+        ui = [QComboBox(), QComboBox(), QPushButton("Select")]
+
+        sprites = [QListWidget(), QPushButton("add"), QPushButton("delete"), 
+                   QComboBox(), QPushButton("Selct"), QSpinBox(), QSpinBox(),
+                   QDoubleSpinBox(), QDoubleSpinBox(), QRadioButton("off"), QSpinBox(), 
+                   QSpinBox(), QSpinBox(), QSpinBox(), QSpinBox()]
+
+        music = [QListWidget(), QPushButton("add"), QPushButton("delete"), QRadioButton("off")]
+
+
+        backgroundItem = QLabel("Background")
+
+
+        formLayout.addRow(backgroundItem)
+
+        backgroundImage = QLabel("Background image")
+        backgroundImage.setStyleSheet("padding-left: 20px;")
+
+        backgroundPosition = QLabel("Position")
+        backgroundPosition.setStyleSheet("padding-left: 20px;")
+
+        backgroundScale = QLabel("Scale")
+        backgroundScale.setStyleSheet("padding-left: 20px;")
+
+        backgroundAnimationButton = QLabel("Animation")
+        backgroundAnimationButton.setStyleSheet("padding-left: 20px;")
+
+        backgroundPositionLayout = QHBoxLayout()
+        backgroundScaleLayout = QHBoxLayout()
+        backgroundAnimationButtonLayout = QHBoxLayout()
+
+        background[1].setValue(data[key]['background']['position']['x'])
+        background[1].setRange(0,10000)
+        background[2].setValue(data[key]['background']['position']['y'])
+        background[2].setRange(0,10000)
+
+        background[3].setValue(data[key]['background']['scale']['x'])
+        background[4].setValue(data[key]['background']['scale']['y'])
+
+        background[5].setChecked(data[key]['background']['animation'])
+
+
+        backgroundPositionLayout.addWidget(backgroundPosition)
+        backgroundPositionLayout.addWidget(QLabel("X"))
+        backgroundPositionLayout.addWidget(background[1])
+        backgroundPositionLayout.addWidget(QLabel("Y"))
+        backgroundPositionLayout.addWidget(background[2])
+
+        backgroundScaleLayout.addWidget(backgroundScale)
+        backgroundScaleLayout.addWidget(QLabel("X"))
+        backgroundScaleLayout.addWidget(background[3])
+        backgroundScaleLayout.addWidget(QLabel("Y"))
+        backgroundScaleLayout.addWidget(background[4])
+
+        backgroundAnimationButtonLayout.addWidget(backgroundAnimationButton)
+        backgroundAnimationButtonLayout.addWidget(background[5])
+
+        formLayout.addRow(backgroundImage, background[0])
+        formLayout.addRow(backgroundPositionLayout)
+        formLayout.addRow(backgroundScaleLayout)
+        formLayout.addRow(backgroundAnimationButtonLayout)
+        
+        if background[5].isChecked():
+            background[5].setText("on")
+
+            backgroundAnimationTime = QLabel("Animation time")
+            backgroundAnimationTime.setStyleSheet("padding-left: 20px;")
+
+            backgroundAnimationPosition = QLabel("Position")
+            backgroundAnimationPosition.setStyleSheet("padding-left: 20px;")
+
+            backgroundAnimationScale = QLabel("Scale")
+            backgroundAnimationScale.setStyleSheet("padding-left: 20px;")
+
+            backgroundAnimationTimeLayout = QHBoxLayout()
+            backgroundAnimationPositionLayout = QHBoxLayout()
+            backgroundAnimationScaleLayout = QHBoxLayout()
+
+            background[6][0].setValue(data[key]['background']['animationSettings']['time'])
+            background[6][1].setValue(data[key]['background']['animationSettings']['position']['x'])
+            background[6][1].setRange(0,10000)
+            background[6][2].setValue(data[key]['background']['animationSettings']['position']['y'])
+            background[6][2].setRange(0,10000)
+            background[6][3].setValue(data[key]['background']['animationSettings']['scale']['x'])
+            background[6][4].setValue(data[key]['background']['animationSettings']['scale']['y'])
+
+            backgroundAnimationTimeLayout.addWidget(backgroundAnimationTime)
+            backgroundAnimationTimeLayout.addWidget(background[6][0])
+
+            backgroundAnimationPositionLayout.addWidget(backgroundAnimationPosition)
+            backgroundAnimationPositionLayout.addWidget(QLabel('X'))
+            backgroundAnimationPositionLayout.addWidget(background[6][1])
+            backgroundAnimationPositionLayout.addWidget(QLabel('Y'))
+            backgroundAnimationPositionLayout.addWidget(background[6][2])
+
+            backgroundAnimationScaleLayout.addWidget(backgroundAnimationScale)
+            backgroundAnimationScaleLayout.addWidget(QLabel("X"))
+            backgroundAnimationScaleLayout.addWidget(background[6][3])
+            backgroundAnimationScaleLayout.addWidget(QLabel("Y"))
+            backgroundAnimationScaleLayout.addWidget(background[6][4])
+
+            formLayout.addRow(backgroundAnimationTimeLayout)
+            formLayout.addRow(backgroundAnimationPositionLayout)
+            formLayout.addRow(backgroundAnimationScaleLayout)
+
+
+
+        background[5].toggled.connect(lambda: background[5].setText("on" if background[5].isChecked() else "off"))
+
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        formLayout.addRow(line)
+    
+
+
+
+
+
+
 
         
 

@@ -3,7 +3,7 @@
         "background": {
             "name": "asd",
             "position":{
-                "x": 0,
+                "x": 99,
                 "y": 0
             },
             "scale":{
@@ -41,7 +41,18 @@
                 "x": 1.25,
                 "y": 1.25
             },
-            "animation": true
+            "animation": true,
+            "animationSettings":{
+                "time": 5,
+                "position":{
+                    "x": 1000,
+                    "y": 300
+                },
+                "scale":{
+                    "x": 0.5,
+                    "y": 0.5
+                }
+            }
         },
         
         "text":{
