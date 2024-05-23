@@ -3,19 +3,22 @@ import sys
 import os
 import subprocess
 import json
+from functools import partial
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QScrollArea, QDialog, QWidget, 
                              QGridLayout, QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, 
                              QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, 
-                             QFileDialog, QToolBar, QMenu, QGraphicsView, QGraphicsScene, 
+                             QFileDialog, QToolBar, QGraphicsView, QGraphicsScene, 
                              QGraphicsRectItem, QMessageBox, QSpinBox, QRadioButton,
-                             QComboBox, QTextEdit, QListWidget, QDoubleSpinBox,
-                             QFrame,)
+                             QComboBox, QTextEdit, QListWidget, QDoubleSpinBox, QFrame,
+                             QLineEdit,)
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush, QPixmap
 from PyQt6.QtCore import Qt
 
 BACKGROUND_FOLDER = "backgrounds/"
 SPRITES_FOLDER =  "sprites/basic"
 MAIN_HERO_EMOTION_FOLDER = "sprites/makishiro"
+
+BUFFER_DATA = {}
 
 class SelectMainHeroEmotion(QDialog):
     def __init__(self):
@@ -79,6 +82,7 @@ class SelectMainHeroEmotion(QDialog):
                 print(f"Failed to open folder: {e}")
         else:
             print(f"Folder does not exist: {folder_path}")
+
     def onRefreshButton(self):
         self.photos = self.images()
         self.populateGrid(self.imageLayout, self.photos)
@@ -132,9 +136,6 @@ class SelectMainHeroEmotion(QDialog):
             print(f"Image clicked: {photo}")
             self.accept()
         return handler
-
-
-    
 
 class SpriteWindow(QDialog):
     def __init__(self):
@@ -205,8 +206,6 @@ class SpriteWindow(QDialog):
         else:
             print(f"Folder does not exist: {folder_path}")
 
-
-
     def onRefreshButton(self):
         self.photos = self.images()
         self.populateGrid(self.imageLayout, self.photos)
@@ -270,8 +269,9 @@ class SpriteWindow(QDialog):
         return handler
 
 class BackgroundWindow(QDialog):
-    def __init__(self):
+    def __init__(self, key):
         super().__init__()
+        self.key = key
         self.initUi()
 
     def initUi(self):
@@ -331,6 +331,7 @@ class BackgroundWindow(QDialog):
                 print(f"Failed to open folder: {e}")
         else:
             print(f"Folder does not exist: {folder_path}")
+
     def onRefreshButton(self):
         self.photos = self.images()
         self.populateGrid(self.imageLayout, self.photos)
@@ -381,7 +382,8 @@ class BackgroundWindow(QDialog):
 
     def onImageClicked(self, photo):
         def handler(event):
-            print(f"Image clicked: {photo}")
+            global BUFFER_DATA
+            BUFFER_DATA[self.key]['background']['name'] = photo
             self.accept()
         return handler
 
@@ -446,12 +448,13 @@ class MainWindow(QMainWindow):
         exitAction.setShortcut("Ctrl+Q")
 
     def openFile(self):
+        global BUFFER_DATA
         fileName, _ = QFileDialog.getOpenFileName(self, "Open file", "", "JSON files (*.json)")
         if fileName:
             try:
                 with open(fileName, "r", encoding="utf-8") as file:
-                    self.content = json.load(file)
-                    self.dockTreeWidget(self.content)
+                    BUFFER_DATA = json.load(file)
+                    self.dockTreeWidget(BUFFER_DATA)
             except Exception as e:
                 QMessageBox.critical(self, "Load Error", f"Failed to load file: {e}")
 
@@ -499,8 +502,10 @@ class MainWindow(QMainWindow):
         self.spriteWindow.exec()
 
     def openBackgroundWindow(self):
-        self.backgroundwindow = BackgroundWindow()
-        self.backgroundwindow.exec()
+        key = self.path[0] if hasattr(self, 'path') and self.path else None
+        if key:
+            self.backgroundWindow = BackgroundWindow(key)
+            self.backgroundWindow.exec()
 
     def createCanvas(self):
         scene = QGraphicsScene()
@@ -646,6 +651,7 @@ class MainWindow(QMainWindow):
         """)
 
     def inspectorLoad(self, path):
+        global BUFFER_DATA
         layout = self.inspectorGroup.layout()
         # Очистка предыдущих виджетов
         for i in reversed(range(layout.count())):
@@ -654,7 +660,6 @@ class MainWindow(QMainWindow):
                 widget.deleteLater()
         
         key = path[0]
-        data = self.content
         formLayout = QFormLayout()
         scrollArea = QScrollArea()
         scrollAreaWidget = QWidget()
@@ -670,18 +675,16 @@ class MainWindow(QMainWindow):
         
         text = [QComboBox(), QTextEdit()]
 
-        ui = [QComboBox(), QComboBox(), QPushButton("Select")]
+        ui = [QComboBox(), QLineEdit(), QPushButton("Select")]
 
         sprites = [QListWidget(), QPushButton("add"), QPushButton("delete"), 
-                   QComboBox(), QPushButton("Selct"), QSpinBox(), QSpinBox(),
+                   QComboBox(), QPushButton("Select"), QSpinBox(), QSpinBox(),
                    QDoubleSpinBox(), QDoubleSpinBox(), QRadioButton("off"), QSpinBox(), 
                    QSpinBox(), QSpinBox(), QSpinBox(), QSpinBox()]
 
         music = [QListWidget(), QPushButton("add"), QPushButton("delete"), QRadioButton("off")]
 
-
         backgroundItem = QLabel("Background")
-
 
         formLayout.addRow(backgroundItem)
 
@@ -701,16 +704,20 @@ class MainWindow(QMainWindow):
         backgroundScaleLayout = QHBoxLayout()
         backgroundAnimationButtonLayout = QHBoxLayout()
 
-        background[1].setValue(data[key]['background']['position']['x'])
+        background[1].setMaximum(10000)
+        background[2].setMaximum(10000)
+        background[3].setMaximum(10000)
+        background[4].setMaximum(10000)
+
+        background[1].setValue(BUFFER_DATA[key]['background']['position']['x'])
         background[1].setRange(0,10000)
-        background[2].setValue(data[key]['background']['position']['y'])
+        background[2].setValue(BUFFER_DATA[key]['background']['position']['y'])
         background[2].setRange(0,10000)
 
-        background[3].setValue(data[key]['background']['scale']['x'])
-        background[4].setValue(data[key]['background']['scale']['y'])
+        background[3].setValue(BUFFER_DATA[key]['background']['scale']['x'])
+        background[4].setValue(BUFFER_DATA[key]['background']['scale']['y'])
 
-        background[5].setChecked(data[key]['background']['animation'])
-
+        background[5].setChecked(BUFFER_DATA[key]['background']['animation'])
 
         backgroundPositionLayout.addWidget(backgroundPosition)
         backgroundPositionLayout.addWidget(QLabel("X"))
@@ -731,6 +738,12 @@ class MainWindow(QMainWindow):
         formLayout.addRow(backgroundPositionLayout)
         formLayout.addRow(backgroundScaleLayout)
         formLayout.addRow(backgroundAnimationButtonLayout)
+
+        if BUFFER_DATA[key]['background']['name'] != '':
+            background[0].setText(BUFFER_DATA[key]['background']['name'][12:])
+
+        background[5].toggled.connect(lambda: self.togledBackgroundAnimationButton(background[5], BUFFER_DATA, key, path))
+        background[0].clicked.connect(lambda: self.selectBackground())
         
         if background[5].isChecked():
             background[5].setText("on")
@@ -748,13 +761,20 @@ class MainWindow(QMainWindow):
             backgroundAnimationPositionLayout = QHBoxLayout()
             backgroundAnimationScaleLayout = QHBoxLayout()
 
-            background[6][0].setValue(data[key]['background']['animationSettings']['time'])
-            background[6][1].setValue(data[key]['background']['animationSettings']['position']['x'])
-            background[6][1].setRange(0,10000)
-            background[6][2].setValue(data[key]['background']['animationSettings']['position']['y'])
-            background[6][2].setRange(0,10000)
-            background[6][3].setValue(data[key]['background']['animationSettings']['scale']['x'])
-            background[6][4].setValue(data[key]['background']['animationSettings']['scale']['y'])
+            background[6][0].setMaximum(10000)
+            background[6][1].setMaximum(10000)
+            background[6][2].setMaximum(10000)
+            background[6][3].setMaximum(10000)
+            background[6][4].setMaximum(10000)
+
+            background[6][0].setValue(BUFFER_DATA[key]['background']['animationSettings']['time'])
+            background[6][0].setRange(-10000,10000)
+            background[6][1].setValue(BUFFER_DATA[key]['background']['animationSettings']['position']['x'])
+            background[6][1].setRange(-10000,10000)
+            background[6][2].setValue(BUFFER_DATA[key]['background']['animationSettings']['position']['y'])
+            background[6][2].setRange(-10000,10000)
+            background[6][3].setValue(BUFFER_DATA[key]['background']['animationSettings']['scale']['x'])
+            background[6][4].setValue(BUFFER_DATA[key]['background']['animationSettings']['scale']['y'])
 
             backgroundAnimationTimeLayout.addWidget(backgroundAnimationTime)
             backgroundAnimationTimeLayout.addWidget(background[6][0])
@@ -775,16 +795,154 @@ class MainWindow(QMainWindow):
             formLayout.addRow(backgroundAnimationPositionLayout)
             formLayout.addRow(backgroundAnimationScaleLayout)
 
-
-
-        background[5].toggled.connect(lambda: background[5].setText("on" if background[5].isChecked() else "off"))
-
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
         line.setFrameShadow(QFrame.Shadow.Sunken)
         formLayout.addRow(line)
-    
 
+        background[2].valueChanged.connect(partial(self.saveSpinValue, background[2], '', 'y', BUFFER_DATA, 'position', key))
+        background[1].valueChanged.connect(partial(self.saveSpinValue, background[1], '', 'x', BUFFER_DATA, 'position', key))
+        background[3].valueChanged.connect(partial(self.saveSpinValue, background[3], '', 'x', BUFFER_DATA, 'scale', key))
+        background[4].valueChanged.connect(partial(self.saveSpinValue, background[4], '', 'y', BUFFER_DATA, 'scale', key))
+        background[6][0].valueChanged.connect(partial(self.saveSpinValue, background[6][0], 'animationSettings', '', BUFFER_DATA, 'time', key))
+        background[6][1].valueChanged.connect(partial(self.saveSpinValue, background[6][1], 'animationSettings', 'x', BUFFER_DATA, 'position', key))
+        background[6][2].valueChanged.connect(partial(self.saveSpinValue, background[6][2], 'animationSettings', 'y', BUFFER_DATA, 'position', key))
+        background[6][3].valueChanged.connect(partial(self.saveSpinValue, background[6][3], 'animationSettings', 'x', BUFFER_DATA, 'scale', key))
+        background[6][4].valueChanged.connect(partial(self.saveSpinValue, background[6][4], 'animationSettings', 'y', BUFFER_DATA, 'scale', key))
+
+        formLayout.addRow(QLabel('Text'))
+        charaList = ['select chara', 'Макиширо Ямагаки', 'Рина Микура', 'Саймон Мацуда', 'Рэйчел Асамая', 'Мишель Мурамаки',
+                     'Сэмми Коуда', 'Мичио Хаякава', 'Сегикадзе Харада', 'Дайчиро Катаяма', 'Цукико Аска',
+                     'Амайя Накагава', "Румико Сакаи", 'Крис Лайтер', 'Янн Ёсимура', 'Тору Ёкояма', 'Катсураги Танабэ',
+                     'Монораку', 'advanced']
+
+        text[0].addItems(charaList)
+
+
+        text[0].setStyleSheet("""
+    QComboBox QAbstractItemView::item:hover {
+        background: white;
+        color: black;
+    }
+    QComboBox {
+        background-color: rgb(50, 70, 90);
+        color: white;
+    }
+    QComboBox::drop-down {
+        border: none;
+    }
+    QComboBox::down-arrow {
+        image: url(down_arrow.png);  # Замените на путь к вашей стрелке, если требуется
+    }
+    QComboBox QAbstractItemView {
+        background-color: rgb(50, 70, 90);
+        color: white;
+        selection-background-color: white;
+        selection-color: black;
+    }
+""")
+
+
+        charaListLayout = QHBoxLayout()
+
+        charaListLabel = QLabel('Character')
+        charaListLabel.setStyleSheet("padding-left: 20px;")
+
+        charaListLayout.addWidget(charaListLabel)
+        charaListLayout.addWidget(text[0])
+
+        formLayout.addRow(charaListLayout)
+
+
+        if BUFFER_DATA[key]['text']['charaName'] != '':
+            try:
+                index = charaList.index(BUFFER_DATA[key]['text']['charaName'])
+                if index == 18:
+                    text[0].setCurrentIndex(index)
+                    self.lineEdit('',formLayout, key) 
+                else:
+                    text[0].setCurrentIndex(index)
+            except:
+                index = 18
+                text[0].setCurrentIndex(index)
+                self.lineEdit(BUFFER_DATA[key]['text']['charaName'],formLayout, key)    
+        elif BUFFER_DATA[key]['text']['charaName'] == '':
+            index = 0
+            text[0].setCurrentIndex(index)
+
+        text[0].currentIndexChanged.connect(lambda: self.charaTextName(text[0],key,path))
+
+
+        textLayout = QHBoxLayout()
+
+        textLabel = QLabel('text')
+        textLabel.setStyleSheet("padding-left: 20px;")
+
+        textLayout.addWidget(textLabel)
+        textLayout.addWidget(text[1])
+
+        formLayout.addRow(textLayout)
+
+        text[1].setMaximumSize(500, 100)
+
+        if BUFFER_DATA[key]['text']['text'] != '':
+            text[1].setText(BUFFER_DATA[key]['text']['text'])
+
+
+
+        text[1].textChanged.connect(lambda: self.saveText(text[1].toPlainText(), key))
+        formLayout.addRow(line)
+
+        formLayout.addRow(QLabel('UI'))
+
+        timeOfDayLayout = QHBoxLayout()
+        timeOfDayLabel = QLabel("Time of day")
+        timeOfDayLabel.setStyleSheet("padding-left: 20px;")
+        timeList = ["select", "Morning", "Afternoon", "Evening", "Night"]
+
+        ui[0].addItems(timeList)
+
+        timeOfDayLayout.addWidget(timeOfDayLabel)
+        timeOfDayLayout.addWidget(ui[0])
+
+        formLayout.addRow(timeOfDayLayout)
+
+        if BUFFER_DATA[key]['ui']['time'] != '':
+            try:
+                index = timeList.index(BUFFER_DATA[key]['ui']['time'])
+                ui[0].setCurrentIndex(index)
+            except:
+                BUFFER_DATA[key]['ui']['time'] = ''
+                ui[0].setCurrentIndex(0)
+        else:
+            ui[0].setCurrentIndex(0)
+
+        ui[0].currentIndexChanged.connect(lambda: self.timeOfDaySave(ui[0], key))
+        
+
+        chapterLayout = QHBoxLayout()
+
+        chapterLabel = QLabel('Chapter')
+        chapterLabel.setStyleSheet("padding-left: 20px;")
+
+        chapterLayout.addWidget(chapterLabel)
+        chapterLayout.addWidget(ui[1])
+
+        if BUFFER_DATA[key]['ui']['chapter'] == '':
+            try:
+                BUFFER_DATA[key]['ui']['chapter'] = BUFFER_DATA[str(int(key) - 1)]['ui']['chapter']
+                ui[1].setText(BUFFER_DATA[str(int(key) - 1)]['ui']['chapter'])
+            except:
+                BUFFER_DATA[key]['ui']['chapter'] = ''
+                ui[1].setText('')
+        else:
+            ui[1].setText(BUFFER_DATA[key]['ui']['chapter'])
+
+        formLayout.addRow(chapterLayout)
+
+        ui[1].textChanged.connect(lambda: self.saveChapter(ui[1].text,key))
+
+        formLayout.addRow(line)
 
 
 
@@ -793,7 +951,74 @@ class MainWindow(QMainWindow):
 
         
 
+    def saveChapter(self, text, key):
+        BUFFER_DATA[key]['ui']['chapter'] = text
 
+    def timeOfDaySave(self, qbox, key):
+        text = qbox.currentText()
+        BUFFER_DATA[key]['ui']['time'] = text
+        
+    def saveText(self, text, key):
+        BUFFER_DATA[key]['text']['text'] = text
+
+    def lineEditSave(selfg,text,key):
+        BUFFER_DATA[key]['text']['charaName'] = text
+
+    def lineEdit(self, text, layout, key):
+        textLayout = QHBoxLayout()
+        textName = QLabel("advanced name")
+        textLineEdit = QLineEdit(text)
+
+        textName.setStyleSheet("padding-left: 20px;")
+
+        textLayout.addWidget(textName)
+        textLayout.addWidget(textLineEdit)
+
+        layout.addRow(textLayout)
+        textLineEdit.textChanged.connect(lambda: self.lineEditSave(text, key))
+
+    def charaTextName(self,qbox,key,path):
+        text = qbox.currentText()
+        BUFFER_DATA[key]['text']['charaName'] = text
+        self.inspectorLoad(path)
+
+    def saveSpinValue(self, spinbox, key1, key3, data, key2, key0):
+        if key1 != '' and key3 != '':
+            data[key0]['background'][key1][key2][key3] = spinbox.value()
+        elif key1 != '' and key3 == '':
+            data[key0]['background'][key1][key2] = spinbox.value()
+        elif key1 == '':
+            data[key0]['background'][key2][key3] = spinbox.value()
+
+    def togledBackgroundAnimationButton(self, radiobutton, data, key, path):
+        if radiobutton.isChecked():
+            data[key]['background']['animation'] = True
+            data[key]['background']['animationSettings'] = {
+                "time": 0,
+                "position":{
+                    "x": 0,
+                    "y": 0
+                },
+                "scale":{
+                    "x": 1,
+                    "y": 1
+                }
+            }
+            self.inspectorLoad(path)
+        else:
+            data[key]['background']['animation'] = False
+            if 'animationSettings' in data[key]['background']:
+                del data[key]['background']['animationSettings']
+            self.inspectorLoad(path)
+
+    def selectBackground(self):
+        key = self.path[0] if hasattr(self, 'path') and self.path else None
+        if key:
+            self.backgroundWindow = BackgroundWindow(key)
+            self.backgroundWindow.exec()
+        self.inspectorLoad(self.path)
+
+            
 
 app = QApplication(sys.argv)
 window = MainWindow()

@@ -3,7 +3,7 @@
         "background": {
             "name": "asd",
             "position":{
-                "x": 99,
+                "x": 929,
                 "y": 0
             },
             "scale":{
@@ -14,7 +14,7 @@
         },
         
         "text":{
-            "charaName": "name",
+            "charaName": "Мичио Хаякава",
             "text": "я обдул ауауаыуаыафцаыуапы"
         },
         
@@ -62,7 +62,7 @@
         
         "ui": {
             "time": "Day",
-            "chapter": " Prologue"
+            "chapter": ""
         },
         
         "sprites":{
@@ -93,7 +93,6 @@
             },
             "2":{
                 "name": "Simon",
-                "pose": "basic",
                 "position":{
                     "x": 500,
                     "y": 300
