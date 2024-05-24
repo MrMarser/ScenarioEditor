@@ -10,9 +10,9 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QScrollArea, QDialog, QW
                              QFileDialog, QToolBar, QGraphicsView, QGraphicsScene, 
                              QGraphicsRectItem, QMessageBox, QSpinBox, QRadioButton,
                              QComboBox, QTextEdit, QListWidget, QDoubleSpinBox, QFrame,
-                             QLineEdit,)
+                             QLineEdit, QListWidgetItem, )
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush, QPixmap
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 
 BACKGROUND_FOLDER = "backgrounds/"
 SPRITES_FOLDER =  "sprites/basic"
@@ -21,6 +21,8 @@ MAIN_HERO_EMOTION_FOLDER = "sprites/makishiro"
 BUFFER_DATA = {}
 
 class SelectMainHeroEmotion(QDialog):
+    emotionSelected = pyqtSignal(str)  # Сигнал, который передает путь к выбранному изображению
+
     def __init__(self):
         super().__init__()
         self.initUi()
@@ -133,7 +135,7 @@ class SelectMainHeroEmotion(QDialog):
 
     def onImageClicked(self, photo):
         def handler(event):
-            print(f"Image clicked: {photo}")
+            self.emotionSelected.emit(photo)
             self.accept()
         return handler
 
@@ -942,14 +944,79 @@ class MainWindow(QMainWindow):
 
         ui[1].textChanged.connect(lambda: self.saveChapter(ui[1].text,key))
 
+        charaEmotionLayout = QHBoxLayout()
+        charaEmotionLabel = QLabel('Chara emotion')
+        charaEmotionLabel.setStyleSheet("padding-left: 20px;")
+
+        charaEmotionLayout.addWidget(charaEmotionLabel)
+        charaEmotionLayout.addWidget(ui[2])
+
+        formLayout.addRow(charaEmotionLayout)
+
+        ui[2].clicked.connect(self.openHeroEmotionWindow)
+
+        if 'charaEmotion' not in BUFFER_DATA[key]['ui']:
+            BUFFER_DATA[key]['ui']['charaEmotion'] = ''
+
+        print(BUFFER_DATA[key]['ui']['charaEmotion'])
+
         formLayout.addRow(line)
 
-
-
-
-
+        formLayout.addRow(QLabel('Sprites'))        
 
         
+
+        self.spritesListWidget = QListWidget()
+
+        self.spritesListWidget.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+
+        self.spriteList = []
+
+
+        for i in range(0, int(BUFFER_DATA[key]['sprites']['count'])):
+        
+            item = QListWidgetItem(f"sprite {i+1}")
+
+            self.spriteList.append(i+1)
+            self.spritesListWidget.addItem(item)
+
+        spritesLayout = QHBoxLayout()
+        spritesLabel = QLabel('Sprite hierarchy')
+        spritesLabel.setStyleSheet("padding-left: 20px;")
+        spritesLayout.addWidget(spritesLabel)
+        spritesLayout.addWidget(self.spritesListWidget)
+        
+
+        formLayout.addRow(spritesLayout)
+
+        self.spritesListWidget.setMaximumHeight(200)
+        #TODO
+
+        
+            
+
+
+
+
+
+
+
+
+
+
+
+    def openHeroEmotionWindow(self):
+        self.heroEmotionWindow = SelectMainHeroEmotion()
+        self.heroEmotionWindow.emotionSelected.connect(self.onHeroEmotionSelected)  # Подключаем сигнал к слоту
+        self.heroEmotionWindow.exec()
+
+    def onHeroEmotionSelected(self, selected_image):
+        print(f"Selected image: {selected_image}")
+        # Здесь вы можете обновить ваш интерфейс или данные в BUFFER_DATA
+        key = self.path[0] if hasattr(self, 'path') and self.path else None
+        if key:
+            BUFFER_DATA[key]['ui']['charaEmotion'] = selected_image
+            self.inspectorLoad(self.path)
 
     def saveChapter(self, text, key):
         BUFFER_DATA[key]['ui']['chapter'] = text

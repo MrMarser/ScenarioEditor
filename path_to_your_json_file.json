@@ -20,7 +20,8 @@
         
         "ui": {
             "time": "Day",
-            "chapter": " Prologue"
+            "chapter": " Prologue",
+            "charaEmotion": ""
         },
         
         "sprites":{
@@ -57,7 +58,8 @@
         
         "text":{
             "charaName": "name",
-            "text": "я обдул ауауаыуаыафцаыуапы"
+            "text": "я обдул ауауаыуаыафцаыуапы",
+            "charaEmotion": ""
         },
         
         "ui": {
