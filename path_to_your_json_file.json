@@ -15,7 +15,7 @@
         
         "text":{
             "charaName": "Мичио Хаякава",
-            "text": "я обдул ауауаыуаыафцаыуапы"
+            "text": "Пример текста"
         },
         
         "ui": {
@@ -25,10 +25,7 @@
         },
         
         "sprites":{
-            "count": 1,
-                "1": {
-                "animation": false
-                }
+            "count": 0
         }
     },
     "1":{
@@ -58,7 +55,7 @@
         
         "text":{
             "charaName": "name",
-            "text": "я обдул ауауаыуаыафцаыуапы",
+            "text": "Пример текста",
             "charaEmotion": ""
         },
         
@@ -68,8 +65,9 @@
         },
         
         "sprites":{
-            "count": 2,
-            "1":{
+            "count": 3,
+            "0":{
+                "objectName": "",
                 "name": "Simon",
                 "pose": "basic",
                 "position":{
@@ -93,7 +91,32 @@
                     }   
                 }
             },
+            "1":{
+                "objectName": "",
+                "name": "Simon",
+                "position":{
+                    "x": 500,
+                    "y": 300
+                },
+                "scale":{
+                    "x": 0.5,
+                    "y": 0.5
+                },
+                "animation": true,
+                "animationSettings":{
+                    "time": 5,
+                    "position":{
+                        "x": 1000,
+                        "y": 300
+                    },
+                    "scale":{
+                        "x": 0.5,
+                        "y": 0.5
+                    }
+                }
+            },
             "2":{
+                "objectName": "",
                 "name": "Simon",
                 "position":{
                     "x": 500,

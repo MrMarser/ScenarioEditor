@@ -8,9 +8,9 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QScrollArea, QDialog, QW
                              QGridLayout, QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, 
                              QLabel, QPushButton, QDockWidget, QTreeWidget, QTreeWidgetItem, 
                              QFileDialog, QToolBar, QGraphicsView, QGraphicsScene, 
-                             QGraphicsRectItem, QMessageBox, QSpinBox, QRadioButton,
+                             QGraphicsRectItem, QMessageBox, QSpinBox, QCheckBox,
                              QComboBox, QTextEdit, QListWidget, QDoubleSpinBox, QFrame,
-                             QLineEdit, QListWidgetItem, )
+                             QLineEdit, QListWidgetItem, QBoxLayout, )
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
 
@@ -567,72 +567,95 @@ class MainWindow(QMainWindow):
         self.loadTreeItems(data)
 
     def loadTreeItems(self, data):
-        for key, value in data.items():
-            root = QTreeWidgetItem(self.treeWidget, [str(key)])
-            self.treeWidget.addTopLevelItem(root)
-            background = QTreeWidgetItem(["background"])
-            text = QTreeWidgetItem(["text"])
-            ui = QTreeWidgetItem(["ui"])
-            sprites = QTreeWidgetItem(["sprites"])
-            music = QTreeWidgetItem(["music"])
+        try:
+            for key, value in data.items():
+                print(f"Processing key: {key}")  # Логирование обрабатываемого ключа
+                root = QTreeWidgetItem(self.treeWidget, [str(key)])
+                self.treeWidget.addTopLevelItem(root)
+                background = QTreeWidgetItem(["background"])
+                text = QTreeWidgetItem(["text"])
+                ui = QTreeWidgetItem(["ui"])
+                sprites = QTreeWidgetItem(["sprites"])
+                music = QTreeWidgetItem(["music"])
 
-            root.addChild(background)
-            root.addChild(text)
-            root.addChild(ui)
-            root.addChild(sprites)
-            root.addChild(music)
+                root.addChild(background)
+                root.addChild(text)
+                root.addChild(ui)
+                root.addChild(sprites)
+                root.addChild(music)
 
-            backgroundName = QTreeWidgetItem(["name"])
-            backgroundPosition = QTreeWidgetItem(["position"])
-            backgroundScale = QTreeWidgetItem(["scale"])
-            backgroundAnimation = QTreeWidgetItem(["animation"])
+                backgroundName = QTreeWidgetItem(["name"])
+                backgroundPosition = QTreeWidgetItem(["position"])
+                backgroundScale = QTreeWidgetItem(["scale"])
+                backgroundAnimation = QTreeWidgetItem(["animation"])
 
-            background.addChild(backgroundName)
-            background.addChild(backgroundPosition)
-            background.addChild(backgroundScale)
-            background.addChild(backgroundAnimation)
+                background.addChild(backgroundName)
+                background.addChild(backgroundPosition)
+                background.addChild(backgroundScale)
+                background.addChild(backgroundAnimation)
 
-            animationTime = QTreeWidgetItem(["time"])
-            animationPosition = QTreeWidgetItem(["position"])
-            animationScale = QTreeWidgetItem(["scale"])
+                animationTime = QTreeWidgetItem(["time"])
+                animationPosition = QTreeWidgetItem(["position"])
+                animationScale = QTreeWidgetItem(["scale"])
 
-            if value["background"].get("animation"):
-                backgroundAnimation.addChild(animationTime)
-                backgroundAnimation.addChild(animationPosition)
-                backgroundAnimation.addChild(animationScale)
+                if "animation" in value["background"] and value["background"]["animation"]:
+                    backgroundAnimation.addChild(animationTime)
+                    backgroundAnimation.addChild(animationPosition)
+                    backgroundAnimation.addChild(animationScale)
 
-            textCharaName = QTreeWidgetItem(["Character name"])
-            textText = QTreeWidgetItem(["text"])
+                textCharaName = QTreeWidgetItem(["Character name"])
+                textText = QTreeWidgetItem(["text"])
 
-            text.addChild(textCharaName)
-            text.addChild(textText)
+                text.addChild(textCharaName)
+                text.addChild(textText)
 
-            uiTime = QTreeWidgetItem(["times of day"])
-            uiChapter = QTreeWidgetItem(["chapter"])
-            uiCharaEmotion = QTreeWidgetItem(["chara emotion"])
+                uiTime = QTreeWidgetItem(["times of day"])
+                uiChapter = QTreeWidgetItem(["chapter"])
+                uiCharaEmotion = QTreeWidgetItem(["chara emotion"])
 
-            ui.addChild(uiTime)
-            ui.addChild(uiChapter)
-            ui.addChild(uiCharaEmotion)
+                ui.addChild(uiTime)
+                ui.addChild(uiChapter)
+                ui.addChild(uiCharaEmotion)
 
-            if value["sprites"]["count"] > 0:
-                spriteArr = []
-                for v in range(value["sprites"]["count"]):
-                    spriteArr.append(QTreeWidgetItem(["sprite " + str(v + 1)]))
-                    sprites.addChild(spriteArr[v])
+                if "count" in value["sprites"] and value["sprites"]["count"] > 0:
+                    spriteArr = []
+                    sprite_count = value["sprites"]["count"]  # Получение количества спрайтов
+                    for v in range(sprite_count):
+                        sprite_key = str(v)  # Генерация ключа в виде строки
+                        print(f"Processing sprite key: {sprite_key}")  # Логирование обрабатываемого ключа спрайта
+                        if sprite_key in value["sprites"]:
+                            spriteArr.append(QTreeWidgetItem([f"sprite {v + 1}"]))
+                            sprites.addChild(spriteArr[v])
 
-                    spriteArr[v].addChild(QTreeWidgetItem(["name"]))
-                    spriteArr[v].addChild(QTreeWidgetItem(["position"]))
-                    spriteArr[v].addChild(QTreeWidgetItem(["scale"]))
+                            spriteArr[v].addChild(QTreeWidgetItem(["name"]))
+                            spriteArr[v].addChild(QTreeWidgetItem(["position"]))
+                            spriteArr[v].addChild(QTreeWidgetItem(["scale"]))
 
-                    if value["sprites"][str(v + 1)]["animation"] == True:
-                        animation_item = QTreeWidgetItem(["animation"])
-                        spriteArr[v].addChild(animation_item)
-                        animation_item.addChild(QTreeWidgetItem(["time"]))
-                        animation_item.addChild(QTreeWidgetItem(["position"]))
-                        animation_item.addChild(QTreeWidgetItem(["scale"]))
-                    else:
-                        spriteArr[v].addChild(QTreeWidgetItem(["animation"]))
+                            if "animation" in value["sprites"][sprite_key] and value["sprites"][sprite_key]["animation"]:
+                                animation_item = QTreeWidgetItem(["animation"])
+                                spriteArr[v].addChild(animation_item)
+                                animation_item.addChild(QTreeWidgetItem(["time"]))
+                                animation_item.addChild(QTreeWidgetItem(["position"]))
+                                animation_item.addChild(QTreeWidgetItem(["scale"]))
+                            else:
+                                spriteArr[v].addChild(QTreeWidgetItem(["animation"]))
+                        else:
+                            print(f"KeyError: Sprite key {sprite_key} not found in sprites")  # Логирование отсутствующего ключа
+        except KeyError as e:
+            print(f"KeyError: {e}")
+        except TypeError as e:
+            print(f"TypeError: {e}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+
+
+    def dockTreeWidget(self, data):
+        try:
+            self.treeWidget.clear()
+            self.loadTreeItems(data)
+        except Exception as e:
+            print(f"Error in dockTreeWidget: {e}")
+
 
     def inspectorDockWidget(self):
         self.inspectorDock = QDockWidget("Element inspector", self)
@@ -672,19 +695,14 @@ class MainWindow(QMainWindow):
         layout.addWidget(scrollArea)
 
         background = [QPushButton("Select"), QSpinBox(), QSpinBox(), 
-                      QDoubleSpinBox(), QDoubleSpinBox(), QRadioButton("off"), 
+                      QDoubleSpinBox(), QDoubleSpinBox(), QCheckBox("off"), 
                       [QSpinBox(), QSpinBox(), QSpinBox(), QDoubleSpinBox(), QDoubleSpinBox()]]
         
         text = [QComboBox(), QTextEdit()]
 
         ui = [QComboBox(), QLineEdit(), QPushButton("Select")]
 
-        sprites = [QListWidget(), QPushButton("add"), QPushButton("delete"), 
-                   QComboBox(), QPushButton("Select"), QSpinBox(), QSpinBox(),
-                   QDoubleSpinBox(), QDoubleSpinBox(), QRadioButton("off"), QSpinBox(), 
-                   QSpinBox(), QSpinBox(), QSpinBox(), QSpinBox()]
-
-        music = [QListWidget(), QPushButton("add"), QPushButton("delete"), QRadioButton("off")]
+        music = [QListWidget(), QPushButton("add"), QPushButton("delete"), QCheckBox("off")]
 
         backgroundItem = QLabel("Background")
 
@@ -822,27 +840,13 @@ class MainWindow(QMainWindow):
 
 
         text[0].setStyleSheet("""
-    QComboBox QAbstractItemView::item:hover {
-        background: white;
-        color: black;
-    }
-    QComboBox {
-        background-color: rgb(50, 70, 90);
-        color: white;
-    }
-    QComboBox::drop-down {
-        border: none;
-    }
-    QComboBox::down-arrow {
-        image: url(down_arrow.png);  # Замените на путь к вашей стрелке, если требуется
-    }
-    QComboBox QAbstractItemView {
-        background-color: rgb(50, 70, 90);
-        color: white;
-        selection-background-color: white;
-        selection-color: black;
-    }
-""")
+            QComboBox QAbstractItemView {
+                color: rgb(85, 170, 255);	
+                background-color: #373e4e;
+                padding: 10px;
+                selection-background-color: white;
+            }
+            """)
 
 
         charaListLayout = QHBoxLayout()
@@ -907,6 +911,15 @@ class MainWindow(QMainWindow):
         timeOfDayLayout.addWidget(timeOfDayLabel)
         timeOfDayLayout.addWidget(ui[0])
 
+        ui[0].setStyleSheet("""
+            QComboBox QAbstractItemView {
+                color: rgb(85, 170, 255);	
+                background-color: #373e4e;
+                padding: 10px;
+                selection-background-color: white;
+            }
+            """)
+
         formLayout.addRow(timeOfDayLayout)
 
         if BUFFER_DATA[key]['ui']['time'] != '':
@@ -957,8 +970,12 @@ class MainWindow(QMainWindow):
 
         if 'charaEmotion' not in BUFFER_DATA[key]['ui']:
             BUFFER_DATA[key]['ui']['charaEmotion'] = ''
+            
+        if BUFFER_DATA[key]['ui']['charaEmotion'] == '':
+            ui[2].setText('select')
+        else:
+            ui[2].setText(BUFFER_DATA[key]['ui']['charaEmotion'])
 
-        print(BUFFER_DATA[key]['ui']['charaEmotion'])
 
         formLayout.addRow(line)
 
@@ -972,13 +989,19 @@ class MainWindow(QMainWindow):
 
         self.spriteList = []
 
+        self.spriteListCount = int(BUFFER_DATA[key]['sprites']['count'])
 
-        for i in range(0, int(BUFFER_DATA[key]['sprites']['count'])):
-        
-            item = QListWidgetItem(f"sprite {i+1}")
+        if  self.spriteListCount > 0:
+            for i in range(0, self.spriteListCount):
+            
+                if BUFFER_DATA[key]['sprites'][str(i)]['objectName'] != '':
+                    item = QListWidgetItem(BUFFER_DATA[key]['sprites'][str(i)]['objectName'])
+                else:
+                    item = QListWidgetItem(f'Sprite: {i}')
+                    BUFFER_DATA[key]['sprites'][str(i)]['objectName'] = f'Sprite: {i}'
 
-            self.spriteList.append(i+1)
-            self.spritesListWidget.addItem(item)
+                self.spriteList.append(i)
+                self.spritesListWidget.addItem(item)
 
         spritesLayout = QHBoxLayout()
         spritesLabel = QLabel('Sprite hierarchy')
@@ -989,30 +1012,132 @@ class MainWindow(QMainWindow):
 
         formLayout.addRow(spritesLayout)
 
-        self.spritesListWidget.setMaximumHeight(200)
+        self.spritesListWidget.setMaximumHeight(300)
+
+
+        self.spritesListWidget.model().rowsMoved.connect(lambda: self.changeSpriteList(key))
+
+        self.spritesListWidget.itemClicked.connect(partial(self.layoutChecker, formLayout, key))
+
+
+    
+    def sptiteSettings(self,item, key):
+        self.spriteLayout = QFormLayout()
+        layout = self.spriteLayout
+
+
+        spriteSelectLabel = QLabel("Sprite")
+        spriteSelectLabel.setStyleSheet("padding-left: 20px;")
+        spriteSelectButton = QPushButton("select")
+        spriteSelectLayout = QHBoxLayout()
+        spriteSelectLayout.addWidget(spriteSelectLabel)
+        spriteSelectLayout.addWidget(spriteSelectButton)
+
+        layout.addRow(spriteSelectLayout)
+
+        index = str(self.spritesListWidget.row(item))
+        
+        if BUFFER_DATA[key]['sprites'][index]['name'] == '':
+            spriteSelectButton.setText("select")
+        else:
+            spriteSelectButton.setText(BUFFER_DATA[key]['sprites'][str(self.spritesListWidget.row(item))]['name'])
+
         #TODO
 
+        positionLayout = QHBoxLayout()
+        positionLabel = QLabel('Position')
+        positionLabel.setStyleSheet("padding-left: 20px;")
+        positionXSpinbox = QSpinBox()
+        positionYSpinbox = QSpinBox()
+        positionLayout.addWidget(positionLabel)
+        positionLayout.addWidget(QLabel('X'))
+        positionLayout.addWidget(positionXSpinbox)
+        positionLayout.addWidget(QLabel('Y'))
+        positionLayout.addWidget(positionYSpinbox)
+
+        layout.addRow(positionLayout)
+
+        #TODO
+
+        scaleLayout = QHBoxLayout()
+        scaleLabel = QLabel('Scale')
+        scaleLabel.setStyleSheet("padding-left: 20px;")
+        scaleXSpinbox = QDoubleSpinBox()
+        scaleYSpinbox = QDoubleSpinBox()
+        scaleLayout.addWidget(scaleLabel)
+        scaleLayout.addWidget(QLabel('X'))
+        scaleLayout.addWidget(scaleXSpinbox)
+        scaleLayout.addWidget(QLabel('Y'))
+        scaleLayout.addWidget(scaleYSpinbox)
+
+        layout.addRow(scaleLayout)
+
+        #TODO
+
+        animationLayout = QHBoxLayout()
+        animationLabel = QLabel('Animation')
+        animationLabel.setStyleSheet("padding-left: 20px;")
+        animationQcheckbox = QCheckBox('off')
+        animationLayout.addWidget(animationLabel)
+        animationLayout.addWidget(animationQcheckbox)
+
+        layout.addRow(animationLayout)
+
+        if BUFFER_DATA[key]['sprites'][index]['animation'] == True:
+            animationQcheckbox.setText('on')
+            animationQcheckbox.setChecked(True)
+
+        animationQcheckbox.toggled.connect(lambda: self.switchSpriteAnimation(key, item, animationQcheckbox))
+    
+
+    def switchSpriteAnimation(self, key, item, checkbox):
+        pass
+
+    def layoutChecker(self, layout, key, item):
         
-            
+        try:
+            self.spriteLayout.deleteLater()
+            self.sptiteSettings(item, key)
+            layout.addRow(self.spriteLayout)
+        except:
+            self.sptiteSettings(item, key)
+            layout.addRow(self.spriteLayout)
 
 
+    def saveSpritelist(self, key):
+        sprite_order = [self.spritesListWidget.item(i).text() for i in range(self.spritesListWidget.count())]
+        sprite_count = int(BUFFER_DATA[key]['sprites']['count'])
+        buffer = BUFFER_DATA[key]['sprites']
+        updated_sprites = {'count': sprite_count}
+
+        original_indices = {buffer[str(i)]['objectName']: i for i in range(sprite_count)}
+
+        for new_index, object_name in enumerate(sprite_order):
+            original_index = original_indices[object_name]
+            updated_sprites[str(new_index)] = buffer[str(original_index)]
+
+        BUFFER_DATA[key]['sprites'] = updated_sprites
+        self.inspectorLoad(self.path)
+
+    def changeSpriteList(self, key):
+        self.saveSpritelist(key)
 
 
-
-
-
-
-
-
+    def  changeSpriteList(self, key):
+        self.spriteList.clear()  
+        count = self.spritesListWidget.count()
+        for i in range(count):
+            item = self.spritesListWidget.item(i)
+            self.spriteList.append(item.text()) 
+        self.saveSpritelist(key)
 
     def openHeroEmotionWindow(self):
         self.heroEmotionWindow = SelectMainHeroEmotion()
-        self.heroEmotionWindow.emotionSelected.connect(self.onHeroEmotionSelected)  # Подключаем сигнал к слоту
+        self.heroEmotionWindow.emotionSelected.connect(self.onHeroEmotionSelected)
         self.heroEmotionWindow.exec()
 
     def onHeroEmotionSelected(self, selected_image):
         print(f"Selected image: {selected_image}")
-        # Здесь вы можете обновить ваш интерфейс или данные в BUFFER_DATA
         key = self.path[0] if hasattr(self, 'path') and self.path else None
         if key:
             BUFFER_DATA[key]['ui']['charaEmotion'] = selected_image
@@ -1028,7 +1153,7 @@ class MainWindow(QMainWindow):
     def saveText(self, text, key):
         BUFFER_DATA[key]['text']['text'] = text
 
-    def lineEditSave(selfg,text,key):
+    def lineEditSave(self,text,key):
         BUFFER_DATA[key]['text']['charaName'] = text
 
     def lineEdit(self, text, layout, key):
@@ -1057,8 +1182,8 @@ class MainWindow(QMainWindow):
         elif key1 == '':
             data[key0]['background'][key2][key3] = spinbox.value()
 
-    def togledBackgroundAnimationButton(self, radiobutton, data, key, path):
-        if radiobutton.isChecked():
+    def togledBackgroundAnimationButton(self, checkbox, data, key, path):
+        if checkbox.isChecked():
             data[key]['background']['animation'] = True
             data[key]['background']['animationSettings'] = {
                 "time": 0,
