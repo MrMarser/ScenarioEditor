@@ -1021,7 +1021,7 @@ class MainWindow(QMainWindow):
 
 
     
-    def sptiteSettings(self,item, key):
+    def sptiteSettings(self, item, key, formLayout):
         self.spriteLayout = QFormLayout()
         layout = self.spriteLayout
 
@@ -1087,20 +1087,38 @@ class MainWindow(QMainWindow):
             animationQcheckbox.setText('on')
             animationQcheckbox.setChecked(True)
 
-        animationQcheckbox.toggled.connect(lambda: self.switchSpriteAnimation(key, item, animationQcheckbox))
+
+        animationQcheckbox.toggled.connect(lambda: self.switchSpriteAnimation(key, item, animationQcheckbox, formLayout))
     
 
-    def switchSpriteAnimation(self, key, item, checkbox):
-        pass
+
+
+
+    def switchSpriteAnimation(self, key, item, checkbox, formLayout):
+        index = str(self.spritesListWidget.row(item))
+
+        if checkbox.isChecked():
+            BUFFER_DATA[key]['sprites'][index]['animation'] = True
+            checkbox.setText('on')
+
+
+        else:
+            BUFFER_DATA[key]['sprites'][index]['animation'] = False
+            checkbox.setText('off')
+
+        
+        
+
+
 
     def layoutChecker(self, layout, key, item):
         
         try:
             self.spriteLayout.deleteLater()
-            self.sptiteSettings(item, key)
+            self.sptiteSettings(item, key, layout)
             layout.addRow(self.spriteLayout)
         except:
-            self.sptiteSettings(item, key)
+            self.sptiteSettings(item, key, layout)
             layout.addRow(self.spriteLayout)
 
 
@@ -1118,9 +1136,6 @@ class MainWindow(QMainWindow):
 
         BUFFER_DATA[key]['sprites'] = updated_sprites
         self.inspectorLoad(self.path)
-
-    def changeSpriteList(self, key):
-        self.saveSpritelist(key)
 
 
     def  changeSpriteList(self, key):
