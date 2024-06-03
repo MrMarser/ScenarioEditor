@@ -140,6 +140,8 @@ class SelectMainHeroEmotion(QDialog):
         return handler
 
 class SpriteWindow(QDialog):
+    sprite = pyqtSignal(str)
+
     def __init__(self):
         super().__init__()
         self.initUi()
@@ -266,7 +268,8 @@ class SpriteWindow(QDialog):
                 self.photos = self.images()
                 self.populateGrid(self.imageLayout, self.photos)
             else:
-                print(os.path.join(SPRITES_FOLDER, os.path.basename(file_path)[:-4])) ##TODO
+                print(os.path.join(SPRITES_FOLDER, os.path.basename(file_path)[:-4]))
+                self.sprite.emit(file_path)
                 self.accept()
         return handler
 
@@ -1019,13 +1022,16 @@ class MainWindow(QMainWindow):
 
         self.spritesListWidget.itemClicked.connect(partial(self.layoutChecker, formLayout, key))
 
-
+        self.formLayout = formLayout
     
     def sptiteSettings(self, item, key, formLayout):
         self.spriteLayout = QFormLayout()
         layout = self.spriteLayout
 
+        self.item = item
+        index = str(self.spritesListWidget.row(item))
 
+        # Кнопка выбора спрайта
         spriteSelectLabel = QLabel("Sprite")
         spriteSelectLabel.setStyleSheet("padding-left: 20px;")
         spriteSelectButton = QPushButton("select")
@@ -1033,17 +1039,15 @@ class MainWindow(QMainWindow):
         spriteSelectLayout.addWidget(spriteSelectLabel)
         spriteSelectLayout.addWidget(spriteSelectButton)
 
-        layout.addRow(spriteSelectLayout)
-
-        index = str(self.spritesListWidget.row(item))
-        
         if BUFFER_DATA[key]['sprites'][index]['name'] == '':
             spriteSelectButton.setText("select")
         else:
-            spriteSelectButton.setText(BUFFER_DATA[key]['sprites'][str(self.spritesListWidget.row(item))]['name'])
+            spriteSelectButton.setText(BUFFER_DATA[key]['sprites'][index]['name'])
 
-        #TODO
+        spriteSelectButton.clicked.connect(self.openSpriteSelectWindow)
+        layout.addRow(spriteSelectLayout)
 
+        # Позиция
         positionLayout = QHBoxLayout()
         positionLabel = QLabel('Position')
         positionLabel.setStyleSheet("padding-left: 20px;")
@@ -1054,11 +1058,16 @@ class MainWindow(QMainWindow):
         positionLayout.addWidget(positionXSpinbox)
         positionLayout.addWidget(QLabel('Y'))
         positionLayout.addWidget(positionYSpinbox)
-
         layout.addRow(positionLayout)
 
-        #TODO
+        positionXSpinbox.setMaximum(10000)
+        positionYSpinbox.setMaximum(10000)
+        positionXSpinbox.setValue(BUFFER_DATA[key]['sprites'][index]['position']['x'])
+        positionYSpinbox.setValue(BUFFER_DATA[key]['sprites'][index]['position']['y'])
+        positionXSpinbox.valueChanged.connect(partial(self.saveSpinValue, positionXSpinbox, index, 'x', BUFFER_DATA[key]['sprites'], 'position', key))
+        positionYSpinbox.valueChanged.connect(partial(self.saveSpinValue, positionYSpinbox, index, 'y', BUFFER_DATA[key]['sprites'], 'position', key))
 
+        # Масштаб
         scaleLayout = QHBoxLayout()
         scaleLabel = QLabel('Scale')
         scaleLabel.setStyleSheet("padding-left: 20px;")
@@ -1069,47 +1078,124 @@ class MainWindow(QMainWindow):
         scaleLayout.addWidget(scaleXSpinbox)
         scaleLayout.addWidget(QLabel('Y'))
         scaleLayout.addWidget(scaleYSpinbox)
-
         layout.addRow(scaleLayout)
 
-        #TODO
+        scaleXSpinbox.setMaximum(10000)
+        scaleYSpinbox.setMaximum(10000)
+        scaleXSpinbox.setValue(BUFFER_DATA[key]['sprites'][index]['scale']['x'])
+        scaleYSpinbox.setValue(BUFFER_DATA[key]['sprites'][index]['scale']['y'])
+        scaleXSpinbox.valueChanged.connect(partial(self.saveSpinValue, scaleXSpinbox, index, 'x', BUFFER_DATA[key]['sprites'], 'scale', key))
+        scaleYSpinbox.valueChanged.connect(partial(self.saveSpinValue, scaleYSpinbox, index, 'y', BUFFER_DATA[key]['sprites'], 'scale', key))
 
+        # Флажок анимации
         animationLayout = QHBoxLayout()
         animationLabel = QLabel('Animation')
         animationLabel.setStyleSheet("padding-left: 20px;")
-        animationQcheckbox = QCheckBox('off')
+        animationCheckbox = QCheckBox('off')
         animationLayout.addWidget(animationLabel)
-        animationLayout.addWidget(animationQcheckbox)
-
+        animationLayout.addWidget(animationCheckbox)
         layout.addRow(animationLayout)
 
-        if BUFFER_DATA[key]['sprites'][index]['animation'] == True:
-            animationQcheckbox.setText('on')
-            animationQcheckbox.setChecked(True)
+        animationCheckbox.setChecked(BUFFER_DATA[key]['sprites'][index]['animation'])
+        animationCheckbox.toggled.connect(lambda: self.switchSpriteAnimation(key, item, animationCheckbox, formLayout))
 
+        if BUFFER_DATA[key]['sprites'][index]['animation']:
+            animationCheckbox.setText('on')
 
-        animationQcheckbox.toggled.connect(lambda: self.switchSpriteAnimation(key, item, animationQcheckbox, formLayout))
-    
+            # Настройки анимации
+            animationSettings = BUFFER_DATA[key]['sprites'][index]['animationSettings']
+            
+            # Время анимации
+            timeLayout = QHBoxLayout()
+            timeLabel = QLabel('Animation time')
+            timeLabel.setStyleSheet("padding-left: 20px;")
+            timeSpinbox = QSpinBox()
+            timeSpinbox.setMaximum(10000)
+            timeSpinbox.setValue(animationSettings['time'])
+            timeSpinbox.valueChanged.connect(partial(self.saveSpinValue, timeSpinbox, index, '', BUFFER_DATA[key]['sprites'][index], 'time', key))
+            timeLayout.addWidget(timeLabel)
+            timeLayout.addWidget(timeSpinbox)
+            layout.addRow(timeLayout)
+
+            # Позиция анимации
+            animationPositionLayout = QHBoxLayout()
+            animationPositionLabel = QLabel('Position')
+            animationPositionLabel.setStyleSheet("padding-left: 20px;")
+            animationPositionXSpinbox = QSpinBox()
+            animationPositionYSpinbox = QSpinBox()
+            animationPositionXSpinbox.setMaximum(10000)
+            animationPositionYSpinbox.setMaximum(10000)
+            animationPositionXSpinbox.setValue(animationSettings['position']['x'])
+            animationPositionYSpinbox.setValue(animationSettings['position']['y'])
+            animationPositionXSpinbox.valueChanged.connect(partial(self.saveSpinValue, animationPositionXSpinbox, index, 'x', animationSettings['position'], '', key))
+            animationPositionYSpinbox.valueChanged.connect(partial(self.saveSpinValue, animationPositionYSpinbox, index, 'y', animationSettings['position'], '', key))
+            animationPositionLayout.addWidget(animationPositionLabel)
+            animationPositionLayout.addWidget(QLabel('X'))
+            animationPositionLayout.addWidget(animationPositionXSpinbox)
+            animationPositionLayout.addWidget(QLabel('Y'))
+            animationPositionLayout.addWidget(animationPositionYSpinbox)
+            layout.addRow(animationPositionLayout)
+
+            # Масштаб анимации
+            animationScaleLayout = QHBoxLayout()
+            animationScaleLabel = QLabel('Scale')
+            animationScaleLabel.setStyleSheet("padding-left: 20px;")
+            animationScaleXSpinbox = QDoubleSpinBox()
+            animationScaleYSpinbox = QDoubleSpinBox()
+            animationScaleXSpinbox.setMaximum(10000)
+            animationScaleYSpinbox.setMaximum(10000)
+            animationScaleXSpinbox.setValue(animationSettings['scale']['x'])
+            animationScaleYSpinbox.setValue(animationSettings['scale']['y'])
+            animationScaleXSpinbox.valueChanged.connect(partial(self.saveSpinValue, animationScaleXSpinbox, index, 'x', animationSettings['scale'], '', key))
+            animationScaleYSpinbox.valueChanged.connect(partial(self.saveSpinValue, animationScaleYSpinbox, index, 'y', animationSettings['scale'], '', key))
+            animationScaleLayout.addWidget(animationScaleLabel)
+            animationScaleLayout.addWidget(QLabel('X'))
+            animationScaleLayout.addWidget(animationScaleXSpinbox)
+            animationScaleLayout.addWidget(QLabel('Y'))
+            animationScaleLayout.addWidget(animationScaleYSpinbox)
+            layout.addRow(animationScaleLayout)
+
+        animationCheckbox.toggled.connect(lambda: self.switchSpriteAnimation(key, item, animationQcheckbox, formLayout))
+        self.index = str(self.spritesListWidget.row(item))
+
+    def openSpriteSelectWindow(self):
+        self.changeSpriteWindow = SpriteWindow()
+        self.changeSpriteWindow.sprite.connect(self.onSpriteSelect)
+        self.changeSpriteWindow.exec()
+
+    def onSpriteSelect(self, selectedImage):
+        
+        key = self.path[0] if hasattr(self, 'path') and self.path else None
+        if key:
+            BUFFER_DATA[key]['sprites'][self.index]['name'] = selectedImage
+            self.layoutChecker(self.formLayout, key, self.item)
 
 
 
 
     def switchSpriteAnimation(self, key, item, checkbox, formLayout):
-        index = str(self.spritesListWidget.row(item))
+        
 
         if checkbox.isChecked():
-            BUFFER_DATA[key]['sprites'][index]['animation'] = True
-            checkbox.setText('on')
-
-
+            BUFFER_DATA[key]['sprites'][self.index]['animation'] = True
+            BUFFER_DATA[key]['sprites'][self.index]['animationSettings'] = {
+                "time": 0,
+                "position":{
+                    "x": 0,
+                    "y": 0
+                },
+                "scale":{
+                    "x": 1,
+                    "y": 1
+                }
+            }
         else:
-            BUFFER_DATA[key]['sprites'][index]['animation'] = False
-            checkbox.setText('off')
+            BUFFER_DATA[key]['sprites'][self.index]['animation'] = False
+            if 'animationSettings' in BUFFER_DATA[key]['sprites'][self.index]:
+                del BUFFER_DATA[key]['sprites'][self.index]['animationSettings']
+            
 
-        
-        
-
-
+        self.layoutChecker(formLayout, key, item)
 
     def layoutChecker(self, layout, key, item):
         
@@ -1211,12 +1297,12 @@ class MainWindow(QMainWindow):
                     "y": 1
                 }
             }
-            self.inspectorLoad(path)
         else:
             data[key]['background']['animation'] = False
             if 'animationSettings' in data[key]['background']:
                 del data[key]['background']['animationSettings']
-            self.inspectorLoad(path)
+        
+        self.inspectorLoad(path)
 
     def selectBackground(self):
         key = self.path[0] if hasattr(self, 'path') and self.path else None
