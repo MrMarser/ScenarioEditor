@@ -286,8 +286,10 @@ class SpriteWindow(QDialog):
                     "y": 1
                 },
                 "animation": False}
+                    
                 else:
                     BUFFER_DATA[self.key]["sprites"][self.index]["name"] = file_path
+                
                 SPRITES_FOLDER = BUFFER_SPRITES_FOLDER
                 self.accept()
         return handler
@@ -1089,6 +1091,8 @@ class MainWindow(QMainWindow):
         positionXSpinbox.setValue(BUFFER_DATA[key]["sprites"][index]["position"]["x"])
         positionYSpinbox.setRange(-10000, 10000)
         positionYSpinbox.setValue(BUFFER_DATA[key]["sprites"][index]["position"]["y"])
+        positionXSpinbox.valueChanged.connect(partial(self.saveSpriteSpinValue, positionXSpinbox, "position", None, "x"))
+        positionYSpinbox.valueChanged.connect(partial(self.saveSpriteSpinValue, positionYSpinbox, "position", None, "y"))
         #TODO
 
         scaleLayout = QHBoxLayout()
@@ -1104,8 +1108,10 @@ class MainWindow(QMainWindow):
 
         layout.addRow(scaleLayout)
 
-        scaleYSpinbox.setValue(BUFFER_DATA[key]["sprites"][index]["scale"]["x"])
+        scaleXSpinbox.setValue(BUFFER_DATA[key]["sprites"][index]["scale"]["x"])
         scaleYSpinbox.setValue(BUFFER_DATA[key]["sprites"][index]["scale"]["y"])
+        scaleXSpinbox.valueChanged.connect(partial(self.saveSpriteSpinValue, scaleXSpinbox, "scale", None, "x"))
+        scaleYSpinbox.valueChanged.connect(partial(self.saveSpriteSpinValue, scaleYSpinbox, "scale", None, "y"))
         #TODO
 
         animationLayout = QHBoxLayout()
@@ -1132,6 +1138,7 @@ class MainWindow(QMainWindow):
 
             timeSpinbox.setRange(0,10000)
             timeSpinbox.setValue(BUFFER_DATA[key]["sprites"][index]["animationSettings"]["time"])
+            timeSpinbox.valueChanged.connect(partial(self.saveSpriteSpinValue, timeSpinbox, "time", 'animation', None))
             #TODO
 
             animationPositionLayout = QHBoxLayout()
@@ -1146,17 +1153,20 @@ class MainWindow(QMainWindow):
             animationPositionLayout.addWidget(animationPositionYSpinbox)
 
             layout.addRow(animationPositionLayout)
+
             animationPositionXSpinbox.setRange(-10000,10000)
             animationPositionYSpinbox.setRange(-10000,10000)
             animationPositionXSpinbox.setValue(BUFFER_DATA[key]["sprites"][index]["animationSettings"]["position"]["x"])
             animationPositionYSpinbox.setValue(BUFFER_DATA[key]["sprites"][index]["animationSettings"]["position"]["y"])
+            animationPositionXSpinbox.valueChanged.connect(partial(self.saveSpriteSpinValue, animationPositionXSpinbox, "position", "animation", "x"))
+            animationPositionYSpinbox.valueChanged.connect(partial(self.saveSpriteSpinValue, animationPositionYSpinbox, "position", "animation", "y"))
             #TODO
 
             animationScaleLayout = QHBoxLayout()
             animationScaleLabel = QLabel('Scale')
             animationScaleLabel.setStyleSheet("padding-left: 20px;")
-            animationScaleXSpinbox = QSpinBox()
-            animationScaleYSpinbox = QSpinBox()
+            animationScaleXSpinbox = QDoubleSpinBox()
+            animationScaleYSpinbox = QDoubleSpinBox()
             animationScaleLayout.addWidget(animationScaleLabel)
             animationScaleLayout.addWidget(QLabel('X'))
             animationScaleLayout.addWidget(animationScaleXSpinbox)
@@ -1165,10 +1175,31 @@ class MainWindow(QMainWindow):
 
             layout.addRow(animationScaleLayout)
 
+            animationScaleXSpinbox.setValue(BUFFER_DATA[key]["sprites"][index]["animationSettings"]["scale"]["x"])
+            animationScaleYSpinbox.setValue(BUFFER_DATA[key]["sprites"][index]["animationSettings"]["scale"]["y"])
+            animationScaleXSpinbox.valueChanged.connect(partial(self.saveSpriteSpinValue, animationScaleXSpinbox, "scale", "animation", "x"))
+            animationScaleYSpinbox.valueChanged.connect(partial(self.saveSpriteSpinValue, animationScaleYSpinbox, "scale", "animation", "y"))
             #TODO
 
         animationQcheckbox.toggled.connect(lambda: self.switchSpriteAnimation(key, item, animationQcheckbox, formLayout))
         self.index = str(self.spritesListWidget.row(item))
+
+
+
+
+
+
+
+
+
+    def saveSpriteSpinValue(self, spinbox, setting, category, atribut):
+        if category == None:
+            BUFFER_DATA[self.key]["sprites"][self.index][setting][atribut] = spinbox.value()
+        elif category != None and setting != "time":
+            BUFFER_DATA[self.key]["sprites"][self.index]["animationSettings"][setting][atribut] = spinbox.value()
+        elif setting == "time":
+            BUFFER_DATA[self.key]["sprites"][self.index]["animationSettings"][setting] = spinbox.value()
+            
 
     def openSpriteSelectWindow(self):
         self.changeSpriteWindow = SpriteWindow(self.key, self.index)
@@ -1183,11 +1214,6 @@ class MainWindow(QMainWindow):
         self.spriteSelectButton.setText(selectedImage)
 
         self.layoutChecker(self.formLayout, self.key, self.item)
-            
-        
-
-
-
 
     def switchSpriteAnimation(self, key, item, checkbox, formLayout):
         
