@@ -720,6 +720,7 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(scrollArea)
 
+
         background = [QPushButton("Select"), QSpinBox(), QSpinBox(), 
                       QDoubleSpinBox(), QDoubleSpinBox(), QCheckBox("off"), 
                       [QSpinBox(), QSpinBox(), QSpinBox(), QDoubleSpinBox(), QDoubleSpinBox()]]
@@ -1009,7 +1010,7 @@ class MainWindow(QMainWindow):
 
         self.spriteList = []
 
-        self.spriteListCount = int(BUFFER_DATA[key]['sprites']['count'])
+        self.spriteListCount = int(BUFFER_DATA[key]['sprite']['count'])
 
         if  self.spriteListCount > 0:
             for i in range(0, self.spriteListCount):

@@ -19,12 +19,12 @@
         },
         
         "ui": {
-            "time": "Day",
+            "time": "Evening",
             "chapter": " Prologue",
             "charaEmotion": ""
         },
         
-        "sprites":{
+        "sprite":{
             "count": 0
         }
     },
@@ -54,17 +54,17 @@
         },
         
         "text":{
-            "charaName": "name",
-            "text": "Пример текста",
-            "charaEmotion": ""
+            "charaName": "asc",
+            "text": "Пример текста"
         },
         
         "ui": {
-            "time": "Day",
-            "chapter": ""
+            "time": "Afternoon",
+            "chapter": "",
+            "charaEmotion": ""
         },
         
-        "sprites":{
+        "sprite":{
             "count": 3,
             "0":{
                 "objectName": "",
