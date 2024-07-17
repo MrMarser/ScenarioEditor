@@ -1074,7 +1074,7 @@ class MainWindow(QMainWindow):
 
     def onSpriteSelect(self, selectedImage):
         key = self.path[0] if hasattr(self, 'path') and self.path else None
-        BUFFER_DATA[key]['sprites'][self.index]['name'] = selectedImage
+        BUFFER_DATA[key]['sprite'][self.index]['name'] = selectedImage
         self.spriteSelectButton.setText(selectedImage)
         self.layoutChecker(self.formLayout, self.key, self.item)
 
@@ -1098,7 +1098,7 @@ class MainWindow(QMainWindow):
             original_index = original_indices[object_name]
             updated_sprites[str(new_index)] = buffer[str(original_index)]
 
-        BUFFER_DATA[key]['sprites'] = updated_sprites
+        BUFFER_DATA[key]['sprite'] = updated_sprites
         self.inspectorLoad(self.path)
 
     def changeSpriteList(self, key):
