@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import sys
 import os
 import subprocess
@@ -12,13 +11,21 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QScrollArea, QDialog, QW
                              QComboBox, QTextEdit, QListWidget, QDoubleSpinBox, QFrame,
                              QLineEdit, QListWidgetItem, QBoxLayout, )
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush, QPixmap
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import QEvent, Qt, pyqtSignal
 
 BACKGROUND_FOLDER = "backgrounds/"
-SPRITES_FOLDER =  "sprites/basic"
+SPRITES_FOLDER = "sprites/basic"
 MAIN_HERO_EMOTION_FOLDER = "sprites/makishiro"
 
-BUFFER_DATA = {}
+# Example structure
+BUFFER_DATA = {
+    "scene1": {
+        "background": {"name": "", "position": {"x": 0, "y": 0}, "scale": {"x": 1, "y": 1}, "animation": False},
+        "text": {"charaName": "", "text": ""},
+        "ui": {"time": "", "chapter": "", "charaEmotion": ""},
+        "sprite": {"count": 0}  # Ensure this is initialized
+    }
+}
 
 class SelectMainHeroEmotion(QDialog):
     emotionSelected = pyqtSignal(str)  # Сигнал, который передает путь к выбранному изображению
@@ -141,9 +148,9 @@ class SelectMainHeroEmotion(QDialog):
 class SpriteWindow(QDialog):
     spriteSelected = pyqtSignal(str)  # Сигнал для передачи выбранного спрайта
 
-    def __init__(self, key, index):
+    def __init__(self, key, spriteId):
+        self.spriteId = spriteId
         self.key = key
-        self.index = index
         super().__init__()
         self.initUi()
     
@@ -269,23 +276,37 @@ class SpriteWindow(QDialog):
                 self.photos = self.images()
                 self.populateGrid(self.imageLayout, self.photos)
             else:
-                if self.index is None:
+                # Check if the sprite structure exists
+                if self.key not in BUFFER_DATA:
+                    print(f"Error: Key '{self.key}' not found in BUFFER_DATA")
+                    return
+                
+                if "sprite" not in BUFFER_DATA[self.key]:
+                    print(f"Error: 'sprite' key not found in BUFFER_DATA[{self.key}]")
+                    return
+                
+                if self.spriteId is None:
                     count = BUFFER_DATA[self.key]["sprite"]["count"]
-                    BUFFER_DATA[self.key]["sprite"]["count"] = count+1
-                    BUFFER_DATA[self.key]["sprite"][str(count)] = {"objectName": "",
+                    BUFFER_DATA[self.key]["sprite"]["count"] = count + 1
+                    BUFFER_DATA[self.key]["sprite"][str(count)] = {"spriteId": "",
                                                                    "name": file_path,
-                                                                   "position":{
+                                                                   "position": {
                                                                        "x": 0,
                                                                        "y": 0
                                                                    },
-                                                                   "scale":{
+                                                                   "scale": {
                                                                        "x": 1,
                                                                        "y": 1
                                                                    },
                                                                    "animation": False}
                     
                 else:
-                    BUFFER_DATA[self.key]["sprite"][self.index]["name"] = file_path
+                    # Ensure spriteId exists
+                    if str(self.spriteId) not in BUFFER_DATA[self.key]["sprite"]:
+                        print(f"Error: spriteId '{self.spriteId}' not found in BUFFER_DATA[{self.key}]['sprite']")
+                        return
+                    
+                    BUFFER_DATA[self.key]["sprite"][str(self.spriteId)]["name"] = file_path
                 
                 SPRITES_FOLDER = BUFFER_SPRITES_FOLDER
                 self.spriteSelected.emit(file_path)  # Эмиссия сигнала
@@ -416,6 +437,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Scenario Editor")
         self.setGeometry(0, 0, 1920, 1080)
         self.showMaximized()
+
+        self.key = None  # Initialize self.key to None
+
         self.createCanvas()
         self.barMenu()
         self.toolbar()
@@ -514,16 +538,17 @@ class MainWindow(QMainWindow):
         toolbar.addAction(playAnimation)
 
         selectBackground.triggered.connect(self.openBackgroundWindow)
-        addSprite.triggered.connect(self.openSpriteWindow)
+
+        # Use a lambda to defer the method call
+        addSprite.triggered.connect(lambda: self.openSpriteWindow(self.key, None))  
 
         self.toolbar = toolbar
 
-    def openSpriteWindow(self):
+    def openSpriteWindow(self, key, spriteId):
         global SPRITES_FOLDER
         SPRITES_FOLDER = "sprites/basic"
-        key = self.path[0] if hasattr(self, 'path') and self.path else None
         if key:
-            self.spriteWindow = SpriteWindow(key, None)
+            self.spriteWindow = SpriteWindow(key, spriteId)
             self.spriteWindow.spriteSelected.connect(self.onSpriteSelected)  # Подключение сигнала к слоту
             self.spriteWindow.exec()
 
@@ -927,7 +952,7 @@ class MainWindow(QMainWindow):
         formLayout.addRow(uiCharaEmotionLayout)
 
         uiCharaEmotionButton.clicked.connect(self.openHeroEmotionWindow)
-
+ 
         if BUFFER_DATA[key]['ui']['charaEmotion'] == '':
             uiCharaEmotionButton.setText('select')
         else:
@@ -956,18 +981,234 @@ class MainWindow(QMainWindow):
 
         if spriteListCount > 0:
             for i in range(0, spriteListCount):
-                if BUFFER_DATA[key]['sprite'][str(i)]['objectName'] != '':
-                    item = QListWidgetItem(BUFFER_DATA[key]['sprite'][str(i)]['objectName'])
+                if BUFFER_DATA[key]['sprite'][str(i)]['spriteId'] != '':
+                    item = QListWidgetItem(BUFFER_DATA[key]['sprite'][str(i)]['spriteId'])
                 else:
                     item = QListWidgetItem(f'Sprite: {i}')
-                    BUFFER_DATA[key]['sprite'][str(i)]['objectName'] = f'Sprite: {i}'
+                    BUFFER_DATA[key]['sprite'][str(i)]['spriteId'] = f'Sprite: {i}'
 
                 self.spriteList.append(i)
                 self.spritesListWidget.addItem(item)
 
         self.spritesListWidget.model().rowsMoved.connect(lambda: self.changeSpriteList(key))
 
+        spritesSelectLayout = QHBoxLayout()
+        spritesSelectLabel = QLabel("Select sprite")
+        spritesSelectLabel.setStyleSheet("padding-left: 20px;")
+        spritesSelectButton = QPushButton("select")
+
+        spritesSelectLayout.addWidget(spritesSelectLabel)
+        spritesSelectLayout.addWidget(spritesSelectButton)
+
+        formLayout.addRow(spritesSelectLayout)
+
+        spritesSelectButton.setEnabled(False)
+
+        spritesSelectButton.clicked.connect(lambda: self.openSpriteWindow(key, self.id))
+
+
+        spritesPositionLayout = QHBoxLayout()
+        spritesPositionLabel = QLabel('Position')
+        spritesPositionLabel.setStyleSheet("padding-left: 20px;")
+        spritesPositionXSpinbox = QSpinBox()
+        spritesPositionYSpinbox = QSpinBox()
+        spritesPositionLayout.addWidget(spritesPositionLabel)
+        spritesPositionLayout.addWidget(QLabel("X"))
+        spritesPositionLayout.addWidget(spritesPositionXSpinbox)
+        spritesPositionLayout.addWidget(QLabel("Y")) 
+        spritesPositionLayout.addWidget(spritesPositionYSpinbox)
+
+        formLayout.addRow(spritesPositionLayout)
+
+        spritesPositionXSpinbox.setRange(-10000,10000)
+        spritesPositionYSpinbox.setRange(-10000,10000)
+        spritesPositionXSpinbox.setEnabled(False)
+        spritesPositionYSpinbox.setEnabled(False)
+
         
+        spritesScaleLayout = QHBoxLayout()
+        spritesScaleLabel = QLabel("Scale")
+        spritesScaleLabel.setStyleSheet("padding-left: 20px;")
+        spritesScaleXSpinbox = QDoubleSpinBox()
+        spritesScaleYSpinbox = QDoubleSpinBox()
+        spritesScaleLayout.addWidget(spritesScaleLabel)
+        spritesScaleLayout.addWidget(QLabel("X"))
+        spritesScaleLayout.addWidget(spritesScaleXSpinbox)
+        spritesScaleLayout.addWidget(QLabel("Y"))
+        spritesScaleLayout.addWidget(spritesScaleYSpinbox)
+
+        formLayout.addRow(spritesScaleLayout)
+
+        spritesScaleXSpinbox.setRange(-10000, 10000)
+        spritesScaleYSpinbox.setRange(-10000, 10000)
+        spritesScaleXSpinbox.setEnabled(False)
+        spritesScaleYSpinbox.setEnabled(False)
+
+
+        spritesAnimationLayout = QHBoxLayout()
+        spritesAnimationLaybel = QLabel("Animation")
+        spritesAnimationLaybel.setStyleSheet("padding-left: 20px;")
+        spritesAnimationCheckbox = QCheckBox()
+        spritesAnimationLayout.addWidget(spritesAnimationLaybel)
+        spritesAnimationLayout.addWidget(spritesAnimationCheckbox)
+
+        formLayout.addRow(spritesAnimationLayout)
+
+        spritesAnimationCheckbox.setEnabled(False)
+
+
+        spritesAnimationTimeLayout = QHBoxLayout()
+        spritesAnimationTimeLabel = QLabel("Animation time")
+        spritesAnimationTimeLabel.setStyleSheet("padding-left: 20px;")
+        spritesAnimationTimeSpinbox = QSpinBox()
+        spritesAnimationTimeLayout.addWidget(spritesAnimationTimeLabel)
+        spritesAnimationTimeLayout.addWidget(spritesAnimationTimeSpinbox)
+
+        formLayout.addRow(spritesAnimationTimeLayout)
+
+        spritesAnimationTimeSpinbox.setToolTip("in 1 sec 60 units")
+        spritesAnimationTimeSpinbox.setEnabled(False)
+
+
+        spritesAnimationPositionLayout = QHBoxLayout()
+        spritesAnimationPositionLabel = QLabel("Position")
+        spritesAnimationPositionLabel.setStyleSheet("padding-left: 20px;")
+        spritesAnimationPositionXSpinbox = QSpinBox()
+        spritesAnimationPositionYSpinbox = QSpinBox()
+        spritesAnimationPositionLayout.addWidget(spritesAnimationPositionLabel)
+        spritesAnimationPositionLayout.addWidget(QLabel("X"))
+        spritesAnimationPositionLayout.addWidget(spritesAnimationPositionXSpinbox)
+        spritesAnimationPositionLayout.addWidget(QLabel("Y"))
+        spritesAnimationPositionLayout.addWidget(spritesAnimationPositionYSpinbox)
+
+        formLayout.addRow(spritesAnimationPositionLayout)
+
+        spritesAnimationPositionXSpinbox.setRange(-10000, 10000)
+        spritesAnimationPositionYSpinbox.setRange(-10000, 10000)
+        spritesAnimationPositionXSpinbox.setEnabled(False)
+        spritesAnimationPositionYSpinbox.setEnabled(False)
+
+
+        spritesAnimationScaleLayout = QHBoxLayout()
+        spritesAnimationScaleLabel = QLabel("Scale")
+        spritesAnimationScaleLabel.setStyleSheet("padding-left: 20px;")
+        spritesAnimationScaleXSpinbox = QDoubleSpinBox()
+        spritesAnimationScaleYSpinbox = QDoubleSpinBox()
+        spritesAnimationScaleLayout.addWidget(spritesAnimationScaleLabel)
+        spritesAnimationScaleLayout.addWidget(QLabel("X"))
+        spritesAnimationScaleLayout.addWidget(spritesAnimationScaleXSpinbox)
+        spritesAnimationScaleLayout.addWidget(QLabel("Y"))
+        spritesAnimationScaleLayout.addWidget(spritesAnimationScaleYSpinbox)
+
+        formLayout.addRow(spritesAnimationScaleLayout)
+
+        spritesAnimationScaleXSpinbox.setRange(-10000, 10000)
+        spritesAnimationScaleYSpinbox.setRange(-10000, 10000)
+        spritesAnimationScaleXSpinbox.setEnabled(False)
+        spritesAnimationScaleYSpinbox.setEnabled(False)
+
+
+
+
+
+
+
+        spritesPositionXSpinbox.valueChanged.connect(lambda: self.saveSpinValue(spritesPositionXSpinbox, key, False, "position", "x", "sprite", str(self.id)))
+        spritesPositionYSpinbox.valueChanged.connect(lambda: self.saveSpinValue(spritesPositionYSpinbox, key, False, "position", "y", "sprite", str(self.id)))
+
+        spritesScaleXSpinbox.valueChanged.connect(lambda: self.saveSpinValue(spritesScaleXSpinbox, key, False, "scale", "x", "sprite", str(self.id)))
+        spritesScaleYSpinbox.valueChanged.connect(lambda: self.saveSpinValue(spritesScaleYSpinbox, key, False, "scale", "y", "sprite", str(self.id)))
+
+        spritesAnimationCheckbox.toggled.connect(lambda: self.spritesAnimationCheckboxClicked(spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox)
+)
+
+
+        self.spritesListWidget.itemClicked.connect(lambda item: self.spriteSettings(item, key, spritesSelectButton, spritesPositionXSpinbox, 
+                                                                                    spritesPositionYSpinbox, spritesScaleXSpinbox, spritesScaleYSpinbox,
+                                                                                    spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox,
+                                                                                    spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox))
+
+
+    def spritesAnimationCheckboxClicked(self, spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox):
+        BUFFER_DATA[self.key]["sprite"][str(self.id)]["animation"] = spritesAnimationCheckbox.isChecked()
+        if BUFFER_DATA[self.key]["sprite"][str(self.id)]["animation"] == False:
+            if "animationSettings" in BUFFER_DATA[self.key]["sprite"][str(self.id)]:
+                del BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]
+        elif BUFFER_DATA[self.key]["sprite"][str(self.id)]["animation"] == True:
+                BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"] = {
+                "time": 0,
+                "position":{
+                    "x": 0,
+                    "y": 0
+                },
+                "scale":{
+                    "x": 1,
+                    "y": 1
+                }
+                }
+        self.animationSpriteSettings(spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox)
+
+
+    def animationSpriteSettings(self, spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox):
+        spritesAnimationCheckbox.setEnabled(True)
+        if BUFFER_DATA[self.key]["sprite"][str(self.id)]["animation"] == False:
+            spritesAnimationTimeSpinbox.setEnabled(False)
+            spritesAnimationPositionXSpinbox.setEnabled(False)
+            spritesAnimationPositionYSpinbox.setEnabled(False)
+            spritesAnimationScaleXSpinbox.setEnabled(False)
+            spritesAnimationScaleYSpinbox.setEnabled(False)
+
+            spritesAnimationCheckbox.setChecked(False)
+            spritesAnimationTimeSpinbox.setValue(0)
+            spritesAnimationPositionXSpinbox.setValue(0)
+            spritesAnimationPositionYSpinbox.setValue(0)
+            spritesAnimationScaleXSpinbox.setValue(0)
+            spritesAnimationScaleYSpinbox.setValue(0)
+
+
+            
+
+        elif BUFFER_DATA[self.key]["sprite"][str(self.id)]["animation"] == True:
+            spritesAnimationTimeSpinbox.setEnabled(True)
+            spritesAnimationPositionXSpinbox.setEnabled(True)
+            spritesAnimationPositionYSpinbox.setEnabled(True)
+            spritesAnimationScaleXSpinbox.setEnabled(True)
+            spritesAnimationScaleYSpinbox.setEnabled(True)
+
+            spritesAnimationCheckbox.setChecked(True)
+            spritesAnimationTimeSpinbox.setValue(BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]["time"])
+            spritesAnimationPositionXSpinbox.setValue(BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]["position"]["x"])
+            spritesAnimationPositionYSpinbox.setValue(BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]["position"]["y"])
+            spritesAnimationScaleXSpinbox.setValue(BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]["scale"]["x"])
+            spritesAnimationScaleYSpinbox.setValue(BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]["scale"]["y"])
+            
+
+    def spriteSettings(self, item, key, spritesSelectButton, spritesPositionXSpinbox, spritesPositionYSpinbox, spritesScaleXSpinbox, spritesScaleYSpinbox, spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox):
+
+        itemText = item.text()
+        self.id = None  
+        for i in range(BUFFER_DATA[key]["sprite"]["count"]):
+            if itemText == BUFFER_DATA[key]["sprite"][str(i)]["spriteId"]:
+                self.id = i
+        
+        spritesSelectButton.setEnabled(True)
+        spritesSelectButtonText = BUFFER_DATA[key]["sprite"][str(self.id)]["name"]
+        spritesSelectButtonText  = spritesSelectButtonText[spritesSelectButtonText.find("/", spritesSelectButtonText.find("/") + 1) + 1:].strip()
+        spritesSelectButton.setText(spritesSelectButtonText)
+
+        spritesPositionXSpinbox.setEnabled(True)
+        spritesPositionYSpinbox.setEnabled(True)
+        spritesPositionXSpinbox.setValue(BUFFER_DATA[key]["sprite"][str(self.id)]["position"]["x"])
+        spritesPositionYSpinbox.setValue(BUFFER_DATA[key]["sprite"][str(self.id)]["position"]["y"])
+
+        spritesScaleXSpinbox.setEnabled(True)
+        spritesScaleYSpinbox.setEnabled(True)
+        spritesScaleXSpinbox.setValue(BUFFER_DATA[key]["sprite"][str(self.id)]["scale"]["x"])
+        spritesScaleYSpinbox.setValue(BUFFER_DATA[key]["sprite"][str(self.id)]["scale"]["y"])
+
+        self.animationSpriteSettings(spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox)
+
+
 
     def animationSwitch(self, checkbox, time, positionX, positionY, scaleX, scaleY, type, key, index):
         condition = checkbox.isChecked()
@@ -1067,10 +1308,6 @@ class MainWindow(QMainWindow):
         scaleX.blockSignals(False)
         scaleY.blockSignals(False)
                 
-    def openSpriteSelectWindow(self):
-        self.changeSpriteWindow = SpriteWindow(self.key, self.index)
-        self.changeSpriteWindow.sprite.connect(self.onSpriteSelect)
-        self.changeSpriteWindow.exec()
 
     def onSpriteSelect(self, selectedImage):
         key = self.path[0] if hasattr(self, 'path') and self.path else None
@@ -1092,7 +1329,7 @@ class MainWindow(QMainWindow):
         buffer = BUFFER_DATA[key]['sprite']
         updated_sprites = {'count': sprite_count}
 
-        original_indices = {buffer[str(i)]['objectName']: i for i in range(sprite_count)}
+        original_indices = {buffer[str(i)]['spriteId']: i for i in range(sprite_count)}
 
         for new_index, object_name in enumerate(sprite_order):
             original_index = original_indices[object_name]
@@ -1131,7 +1368,7 @@ class MainWindow(QMainWindow):
     def saveText(self, text, key):
         BUFFER_DATA[key]['text']['text'] = text
 
-    def lineEditSave(self,text,key):
+    def lineEditSave(self, text, key):
         BUFFER_DATA[key]['text']['charaName'] = text
 
     def lineEdit(self, text, layout, key):
@@ -1145,7 +1382,7 @@ class MainWindow(QMainWindow):
         textLayout.addWidget(textLineEdit)
 
         layout.addRow(textLayout)
-        textLineEdit.textChanged.connect(lambda: self.lineEditSave(text, key))
+        textLineEdit.textChanged.connect(lambda: self.lineEditSave(textLineEdit.text(), key))
 
     def charaTextName(self,qbox,key,path):
         text = qbox.currentText()

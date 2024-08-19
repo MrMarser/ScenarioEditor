@@ -67,7 +67,7 @@
         "sprite":{
             "count": 3,
             "0":{
-                "objectName": "",
+                "spriteId": "",
                 "name": "Simon",
                 "position":{
                     "x": 0,
@@ -91,7 +91,7 @@
                 }
             },
             "1":{
-                "objectName": "",
+                "spriteId": "",
                 "name": "Simon",
                 "position":{
                     "x": 500,
@@ -115,7 +115,7 @@
                 }
             },
             "2":{
-                "objectName": "",
+                "spriteId": "",
                 "name": "Simon",
                 "position":{
                     "x": 500,
