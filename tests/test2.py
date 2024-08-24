@@ -1119,8 +1119,7 @@ class MainWindow(QMainWindow):
         spritesScaleXSpinbox.valueChanged.connect(lambda: self.saveSpinValue(spritesScaleXSpinbox, key, False, "scale", "x", "sprite", str(self.id)))
         spritesScaleYSpinbox.valueChanged.connect(lambda: self.saveSpinValue(spritesScaleYSpinbox, key, False, "scale", "y", "sprite", str(self.id)))
 
-        spritesAnimationCheckbox.toggled.connect(lambda: self.spritesAnimationCheckboxClicked(spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox)
-)
+        spritesAnimationCheckbox.toggled.connect(lambda: self.spritesAnimationCheckboxClicked(spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox))
 
 
         self.spritesListWidget.itemClicked.connect(lambda item: self.spriteSettings(item, key, spritesSelectButton, spritesPositionXSpinbox, 
@@ -1129,29 +1128,87 @@ class MainWindow(QMainWindow):
                                                                                     spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox))
 
 
-    def spritesAnimationCheckboxClicked(self, spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox):
-        BUFFER_DATA[self.key]["sprite"][str(self.id)]["animation"] = spritesAnimationCheckbox.isChecked()
-        if BUFFER_DATA[self.key]["sprite"][str(self.id)]["animation"] == False:
-            if "animationSettings" in BUFFER_DATA[self.key]["sprite"][str(self.id)]:
-                del BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]
-        elif BUFFER_DATA[self.key]["sprite"][str(self.id)]["animation"] == True:
-                BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"] = {
+    def spritesAnimationCheckboxClicked(self, spritesAnimationCheckbox, spritesAnimationTimeSpinbox, 
+                                        spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, 
+                                        spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox):
+        sprite_data = BUFFER_DATA[self.key]["sprite"][str(self.id)]
+        sprite_data["animation"] = spritesAnimationCheckbox.isChecked()
+        
+        if sprite_data["animation"] == False:
+            if "animationSettings" in sprite_data:
+                del sprite_data["animationSettings"]
+        else:
+            if "animationSettings" not in sprite_data:
+                sprite_data["animationSettings"] = {
+                    "time": 0,
+                    "position": {"x": 0, "y": 0},
+                    "scale": {"x": 1, "y": 1}
+                }
+        
+        # Передаем sprite_data в animationSpriteSettings
+        self.animationSpriteSettings(spritesAnimationCheckbox, spritesAnimationTimeSpinbox, 
+                                    spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, 
+                                    spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox, 
+                                    sprite_data)
+
+
+    def spriteSettings(self, item, key, spritesSelectButton, spritesPositionXSpinbox, spritesPositionYSpinbox, 
+                    spritesScaleXSpinbox, spritesScaleYSpinbox, spritesAnimationCheckbox, 
+                    spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, 
+                    spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, 
+                    spritesAnimationScaleYSpinbox):
+        itemText = item.text()
+        self.id = None
+
+        # Найти индекс текущего спрайта
+        for i in range(BUFFER_DATA[key]["sprite"]["count"]):
+            if itemText == BUFFER_DATA[key]["sprite"][str(i)]["spriteId"]:
+                self.id = i
+
+        # Проверить наличие настроек анимации и других параметров для этого спрайта
+        sprite_data = BUFFER_DATA[key]["sprite"][str(self.id)]
+        
+        if "animationSettings" not in sprite_data:
+            # Если настройки анимации отсутствуют, инициализируем их
+            sprite_data["animationSettings"] = {
                 "time": 0,
-                "position":{
-                    "x": 0,
-                    "y": 0
-                },
-                "scale":{
-                    "x": 1,
-                    "y": 1
-                }
-                }
-        self.animationSpriteSettings(spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox)
+                "position": {"x": 0, "y": 0},
+                "scale": {"x": 1.0, "y": 1.0}
+            }
 
+        # Обновление интерфейса с использованием данных спрайта
+        spritesSelectButton.setEnabled(True)
+        spritesSelectButtonText = sprite_data["name"]
+        spritesSelectButtonText = spritesSelectButtonText[spritesSelectButtonText.find("/", spritesSelectButtonText.find("/") + 1) + 1:].strip()
+        spritesSelectButton.setText(spritesSelectButtonText)
 
-    def animationSpriteSettings(self, spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox):
+        spritesPositionXSpinbox.setEnabled(True)
+        spritesPositionYSpinbox.setEnabled(True)
+        spritesPositionXSpinbox.setValue(sprite_data["position"]["x"])
+        spritesPositionYSpinbox.setValue(sprite_data["position"]["y"])
+
+        spritesScaleXSpinbox.setEnabled(True)
+        spritesScaleYSpinbox.setEnabled(True)
+        spritesScaleXSpinbox.setValue(sprite_data["scale"]["x"])
+        spritesScaleYSpinbox.setValue(sprite_data["scale"]["y"])
+
+        # Настройки анимации
+        self.animationSpriteSettings(spritesAnimationCheckbox, spritesAnimationTimeSpinbox, 
+                                    spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, 
+                                    spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox, 
+                                    sprite_data)
+
+    def animationSpriteSettings(self, spritesAnimationCheckbox, spritesAnimationTimeSpinbox, 
+                                spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, 
+                                spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox, 
+                                sprite_data):
+        
+        # Активация чекбокса анимации
         spritesAnimationCheckbox.setEnabled(True)
-        if BUFFER_DATA[self.key]["sprite"][str(self.id)]["animation"] == False:
+        
+        # Проверка состояния анимации
+        if sprite_data["animation"] == False:
+            # Если анимация отключена, отключаем поля и обнуляем значения
             spritesAnimationTimeSpinbox.setEnabled(False)
             spritesAnimationPositionXSpinbox.setEnabled(False)
             spritesAnimationPositionYSpinbox.setEnabled(False)
@@ -1164,11 +1221,8 @@ class MainWindow(QMainWindow):
             spritesAnimationPositionYSpinbox.setValue(0)
             spritesAnimationScaleXSpinbox.setValue(0)
             spritesAnimationScaleYSpinbox.setValue(0)
-
-
-            
-
-        elif BUFFER_DATA[self.key]["sprite"][str(self.id)]["animation"] == True:
+        else:
+            # Если анимация включена, включаем поля и устанавливаем значения из данных
             spritesAnimationTimeSpinbox.setEnabled(True)
             spritesAnimationPositionXSpinbox.setEnabled(True)
             spritesAnimationPositionYSpinbox.setEnabled(True)
@@ -1176,38 +1230,11 @@ class MainWindow(QMainWindow):
             spritesAnimationScaleYSpinbox.setEnabled(True)
 
             spritesAnimationCheckbox.setChecked(True)
-            spritesAnimationTimeSpinbox.setValue(BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]["time"])
-            spritesAnimationPositionXSpinbox.setValue(BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]["position"]["x"])
-            spritesAnimationPositionYSpinbox.setValue(BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]["position"]["y"])
-            spritesAnimationScaleXSpinbox.setValue(BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]["scale"]["x"])
-            spritesAnimationScaleYSpinbox.setValue(BUFFER_DATA[self.key]["sprite"][str(self.id)]["animationSettings"]["scale"]["y"])
-            
-
-    def spriteSettings(self, item, key, spritesSelectButton, spritesPositionXSpinbox, spritesPositionYSpinbox, spritesScaleXSpinbox, spritesScaleYSpinbox, spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox):
-
-        itemText = item.text()
-        self.id = None  
-        for i in range(BUFFER_DATA[key]["sprite"]["count"]):
-            if itemText == BUFFER_DATA[key]["sprite"][str(i)]["spriteId"]:
-                self.id = i
-        
-        spritesSelectButton.setEnabled(True)
-        spritesSelectButtonText = BUFFER_DATA[key]["sprite"][str(self.id)]["name"]
-        spritesSelectButtonText  = spritesSelectButtonText[spritesSelectButtonText.find("/", spritesSelectButtonText.find("/") + 1) + 1:].strip()
-        spritesSelectButton.setText(spritesSelectButtonText)
-
-        spritesPositionXSpinbox.setEnabled(True)
-        spritesPositionYSpinbox.setEnabled(True)
-        spritesPositionXSpinbox.setValue(BUFFER_DATA[key]["sprite"][str(self.id)]["position"]["x"])
-        spritesPositionYSpinbox.setValue(BUFFER_DATA[key]["sprite"][str(self.id)]["position"]["y"])
-
-        spritesScaleXSpinbox.setEnabled(True)
-        spritesScaleYSpinbox.setEnabled(True)
-        spritesScaleXSpinbox.setValue(BUFFER_DATA[key]["sprite"][str(self.id)]["scale"]["x"])
-        spritesScaleYSpinbox.setValue(BUFFER_DATA[key]["sprite"][str(self.id)]["scale"]["y"])
-
-        self.animationSpriteSettings(spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox, spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox)
-
+            spritesAnimationTimeSpinbox.setValue(sprite_data["animationSettings"]["time"])
+            spritesAnimationPositionXSpinbox.setValue(sprite_data["animationSettings"]["position"]["x"])
+            spritesAnimationPositionYSpinbox.setValue(sprite_data["animationSettings"]["position"]["y"])
+            spritesAnimationScaleXSpinbox.setValue(sprite_data["animationSettings"]["scale"]["x"])
+            spritesAnimationScaleYSpinbox.setValue(sprite_data["animationSettings"]["scale"]["y"])
 
 
     def animationSwitch(self, checkbox, time, positionX, positionY, scaleX, scaleY, type, key, index):
