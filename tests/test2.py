@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QScrollArea, QDialog, QW
                              QFileDialog, QToolBar, QGraphicsView, QGraphicsScene, 
                              QGraphicsRectItem, QMessageBox, QSpinBox, QCheckBox,
                              QComboBox, QTextEdit, QListWidget, QDoubleSpinBox, QFrame,
-                             QLineEdit, QListWidgetItem, QBoxLayout, )
+                             QLineEdit, QListWidgetItem, QMenu, )
 from PyQt6.QtGui import QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush, QPixmap
 from PyQt6.QtCore import QEvent, Qt, pyqtSignal
 
@@ -1082,6 +1082,9 @@ class MainWindow(QMainWindow):
 
         spritesSelectButton.clicked.connect(lambda: self.openSpriteWindow(key, self.id))
 
+        self.spritesListWidget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.spritesListWidget.customContextMenuRequested.connect(self.showContextMenu)
+
 
         spritesPositionLayout = QHBoxLayout()
         spritesPositionLabel = QLabel('Position')
@@ -1202,6 +1205,41 @@ class MainWindow(QMainWindow):
                                                                                     spritesPositionYSpinbox, spritesScaleXSpinbox, spritesScaleYSpinbox,
                                                                                     spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox,
                                                                                     spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox))
+
+
+
+
+
+    def showContextMenu(self, pos):
+        # Определяем элемент, на который нажали правой кнопкой мыши
+        item = self.spritesListWidget.itemAt(pos)
+        
+        if item is not None:
+            # Получаем индекс элемента
+            itemIndex = self.spritesListWidget.row(item)
+            print(f"Clicked on item: {item.text()} at index {itemIndex}")
+        
+            # Создаем контекстное меню
+            contextMenu = QMenu(self)
+
+            # Добавляем действия в контекстное меню
+            action1 = contextMenu.addAction("Action 1")
+            action2 = contextMenu.addAction("Action 2")
+            action3 = contextMenu.addAction("Action 3")
+
+            # Определяем, какое действие было выбрано
+            action = contextMenu.exec(self.spritesListWidget.mapToGlobal(pos))
+
+            if action == action1:
+                print(f"Action 1 selected for item at index {itemIndex}: {item.text()}")
+            elif action == action2:
+                print(f"Action 2 selected for item at index {itemIndex}: {item.text()}")
+            elif action == action3:
+                print(f"Action 3 selected for item at index {itemIndex}: {item.text()}")
+        else:
+            print("No item under the click")
+
+
 
 
     def spritesAnimationCheckboxClicked(self, spritesAnimationCheckbox, spritesAnimationTimeSpinbox, 
