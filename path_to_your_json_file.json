@@ -1,144 +1,139 @@
 {
-    "0":{
+    "0": {
         "background": {
             "name": "asd",
-            "position":{
-                "x": 929,
+            "position": {
+                "x": 930,
                 "y": 0
             },
-            "scale":{
+            "scale": {
                 "x": 1.25,
                 "y": 1.25
             },
             "animation": false
         },
-        
-        "text":{
+        "text": {
             "charaName": "Мичио Хаякава",
             "text": "Пример текста"
         },
-        
         "ui": {
             "time": "Evening",
             "chapter": " Prologue",
-            "charaEmotion": ""
+            "charaEmotion": "",
+            "charaEmotionBackground": ""
         },
-        
-        "sprite":{
+        "sprite": {
             "count": 0
         }
     },
-    "1":{
+    "1": {
         "background": {
             "name": "asd",
-            "position":{
+            "position": {
                 "x": 0,
                 "y": 0
             },
-            "scale":{
+            "scale": {
                 "x": 1.25,
                 "y": 1.25
             },
             "animation": true,
-            "animationSettings":{
+            "animationSettings": {
                 "time": 5,
-                "position":{
+                "position": {
                     "x": 1000,
                     "y": 300
                 },
-                "scale":{
+                "scale": {
                     "x": 0.5,
                     "y": 0.5
                 }
             }
         },
-        
-        "text":{
+        "text": {
             "charaName": "asc",
             "text": "Пример текста"
         },
-        
         "ui": {
             "time": "Afternoon",
-            "chapter": "",
-            "charaEmotion": ""
+            "chapter": " Prologue",
+            "charaEmotion": "",
+            "charaEmotionBackground": ""
         },
-        
-        "sprite":{
+        "sprite": {
             "count": 3,
-            "0":{
-                "spriteId": "",
+            "0": {
+                "spriteId": "Sprite: 0",
                 "name": "Simon",
-                "position":{
+                "position": {
                     "x": 0,
                     "y": 300
                 },
-                "scale":{
+                "scale": {
                     "x": 0.5,
                     "y": 0.5
                 },
                 "animation": true,
-                "animationSettings":{
+                "animationSettings": {
                     "time": 5,
-                    "position":{
+                    "position": {
                         "x": 500,
                         "y": 300
                     },
-                    "scale":{
-                        "x": 0.5,
-                        "y": 0.5
-                    }   
-                }
-            },
-            "1":{
-                "spriteId": "",
-                "name": "Simon",
-                "position":{
-                    "x": 500,
-                    "y": 300
-                },
-                "scale":{
-                    "x": 0.5,
-                    "y": 0.5
-                },
-                "animation": true,
-                "animationSettings":{
-                    "time": 5,
-                    "position":{
-                        "x": 1000,
-                        "y": 300
-                    },
-                    "scale":{
+                    "scale": {
                         "x": 0.5,
                         "y": 0.5
                     }
                 }
             },
-            "2":{
-                "spriteId": "",
+            "1": {
+                "spriteId": "Sprite: 1",
                 "name": "Simon",
-                "position":{
+                "position": {
                     "x": 500,
                     "y": 300
                 },
-                "scale":{
+                "scale": {
                     "x": 0.5,
                     "y": 0.5
                 },
                 "animation": true,
-                "animationSettings":{
+                "animationSettings": {
                     "time": 5,
-                    "position":{
+                    "position": {
                         "x": 1000,
                         "y": 300
                     },
-                    "scale":{
+                    "scale": {
+                        "x": 0.5,
+                        "y": 0.5
+                    }
+                }
+            },
+            "2": {
+                "spriteId": "Sprite: 2",
+                "name": "Simon",
+                "position": {
+                    "x": 500,
+                    "y": 300
+                },
+                "scale": {
+                    "x": 0.5,
+                    "y": 0.5
+                },
+                "animation": true,
+                "animationSettings": {
+                    "time": 5,
+                    "position": {
+                        "x": 1000,
+                        "y": 300
+                    },
+                    "scale": {
                         "x": 0.5,
                         "y": 0.5
                     }
                 }
             }
-
         }
     }
 }

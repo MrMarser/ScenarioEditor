@@ -18,14 +18,7 @@ SPRITES_FOLDER = "sprites/basic"
 MAIN_HERO_EMOTION_FOLDER = "sprites/makishiro"
 
 # Example structure
-BUFFER_DATA = {
-    "scene1": {
-        "background": {"name": "", "position": {"x": 0, "y": 0}, "scale": {"x": 1, "y": 1}, "animation": False},
-        "text": {"charaName": "", "text": ""},
-        "ui": {"time": "", "chapter": "", "charaEmotion": ""},
-        "sprite": {"count": 0}  # Ensure this is initialized
-    }
-}
+BUFFER_DATA = {}
 
 class SelectMainHeroEmotion(QDialog):
     emotionSelected = pyqtSignal(str)  # Сигнал, который передает путь к выбранному изображению
@@ -314,8 +307,9 @@ class SpriteWindow(QDialog):
         return handler
 
 class BackgroundWindow(QDialog):
-    def __init__(self, key):
+    def __init__(self, key, subject):
         super().__init__()
+        self.subject = subject
         self.key = key
         self.initUi()
 
@@ -427,7 +421,10 @@ class BackgroundWindow(QDialog):
     def onImageClicked(self, photo):
         def handler(event):
             global BUFFER_DATA
-            BUFFER_DATA[self.key]['background']['name'] = photo
+            if self.subject == "background":
+                BUFFER_DATA[self.key]['background']['name'] = photo
+            else:
+                BUFFER_DATA[self.key]['ui']['charaEmotionBackground'] = photo
             self.accept()
         return handler
 
@@ -439,6 +436,8 @@ class MainWindow(QMainWindow):
         self.showMaximized()
 
         self.key = None  # Initialize self.key to None
+        self.currentFileName = None  # Переменная для хранения текущего имени файла
+
 
         self.createCanvas()
         self.barMenu()
@@ -487,6 +486,8 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(exitAction)
 
         openAction.triggered.connect(self.openFile)
+        saveAction.triggered.connect(self.saveFile)
+        saveAsAction.triggered.connect(self.saveFileAs)
         exitAction.triggered.connect(self.close)
 
         openAction.setShortcut("Ctrl+O")
@@ -501,9 +502,43 @@ class MainWindow(QMainWindow):
             try:
                 with open(fileName, "r", encoding="utf-8") as file:
                     BUFFER_DATA = json.load(file)
+                    self.currentFileName = fileName  # Сохраняем имя файла
                     self.dockTreeWidget(BUFFER_DATA)
             except Exception as e:
                 QMessageBox.critical(self, "Load Error", f"Failed to load file: {e}")
+
+    def saveFile(self):
+        """
+        Сохраняет данные в файл, если он был ранее открыт или сохранён.
+        Если файл не задан, вызывается диалог сохранения (Save As).
+        """
+        if self.currentFileName:
+            try:
+                with open(self.currentFileName, 'w', encoding='utf-8') as file:
+                    json.dump(BUFFER_DATA, file, ensure_ascii=False, indent=4)
+                QMessageBox.information(self, "Success", "File saved successfully!")
+            except Exception as e:
+                QMessageBox.critical(self, "Save Error", f"Failed to save file: {e}")
+        else:
+            self.saveFileAs()  # Если файл не выбран, вызываем "Save As"
+
+    def saveFileAs(self):
+        """
+        Сохраняет данные в новый файл, который выбирается через диалог.
+        """
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save file", "", "JSON files (*.json)")
+        if fileName:
+            try:
+                if not fileName.endswith(".json"):
+                    fileName += ".json"  # Добавляем расширение, если его нет
+                with open(fileName, 'w', encoding='utf-8') as file:
+                    json.dump(BUFFER_DATA, file, ensure_ascii=False, indent=4)
+                self.currentFileName = fileName  # Сохраняем имя файла
+                QMessageBox.information(self, "Success", "File saved successfully!")
+            except Exception as e:
+                QMessageBox.critical(self, "Save Error", f"Failed to save file: {e}")
+
+
 
     def toolbar(self):
         toolbar = QToolBar("Tool bar")
@@ -537,12 +572,30 @@ class MainWindow(QMainWindow):
         playAnimation = QAction("Play Animation", self)
         toolbar.addAction(playAnimation)
 
-        selectBackground.triggered.connect(self.openBackgroundWindow)
+        selectBackground.triggered.connect(lambda: self.selectBackground("background"))
 
         # Use a lambda to defer the method call
         addSprite.triggered.connect(lambda: self.openSpriteWindow(self.key, None))  
 
+        newFrame.triggered.connect(lambda: self.addFrame())
+
         self.toolbar = toolbar
+
+    def addFrame(self):
+        legth = 0 
+        if BUFFER_DATA != {}:
+            for key, value in BUFFER_DATA.items():
+                legth+=1
+            BUFFER_DATA[str(legth)]= { "background": { "name": "", "position":{ "x": 0, "y": 0 }, "scale":{ "x": 1, "y": 1 }, "animation": False }, "text":{ "charaName": "", "text": "" }, "ui": { "time": "", "chapter": "", "charaEmotion": "", "charaEmotionBackground": "" }, "sprite":{ "count": 0 } }
+            self.dockTreeWidget(BUFFER_DATA)
+        else:
+            BUFFER_DATA["0"] = { "background": { "name": "", "position":{ "x": 0, "y": 0 }, "scale":{ "x": 1, "y": 1 }, "animation": False }, "text":{ "charaName": "", "text": "" }, "ui": { "time": "", "chapter": "", "charaEmotion": "", "charaEmotionBackground": "" }, "sprite":{ "count": 0 } }
+
+
+
+
+
+
 
     def openSpriteWindow(self, key, spriteId):
         global SPRITES_FOLDER
@@ -558,11 +611,6 @@ class MainWindow(QMainWindow):
         if key:
             self.inspectorLoad(self.path)  # Перезагрузка инспектора
 
-    def openBackgroundWindow(self):
-        key = self.path[0] if hasattr(self, 'path') and self.path else None
-        if key:
-            self.backgroundWindow = BackgroundWindow(key)
-            self.backgroundWindow.exec()
 
     def createCanvas(self):
         scene = QGraphicsScene()
@@ -615,11 +663,12 @@ class MainWindow(QMainWindow):
             self.path.append(item.text(0))
             item = item.parent()
         self.path.reverse()
+        
+        print(f"Item clicked: {self.path}")  # Отладочное сообщение для проверки пути
+
+        # Здесь должна происходить загрузка инспектора, а не вызов окна фона
         self.inspectorLoad(self.path)
 
-    def dockTreeWidget(self, data):
-        self.treeWidget.clear()
-        self.loadTreeItems(data)
 
     def loadTreeItems(self, data):
         try:
@@ -694,11 +743,13 @@ class MainWindow(QMainWindow):
 
         if BUFFER_DATA[key]["background"]["name"] != "":
             backgroundSelectButtonText = BUFFER_DATA[key]["background"]["name"]
-            backgroundSelectButton.setText(backgroundSelectButtonText.replace("backgrounds/", ""))
+            backgroundSelectButtonText = backgroundSelectButtonText.replace("backgrounds/", "")
+            backgroundSelectButtonText = backgroundSelectButtonText.replace(".png", "")
+            backgroundSelectButton.setText(backgroundSelectButtonText)
         else:
             backgroundSelectButton.setText("Select")
 
-        backgroundSelectButton.clicked.connect(lambda: self.selectBackground())
+        backgroundSelectButton.clicked.connect(lambda: self.selectBackground("background"))
 
         backgroundPositionLayout = QHBoxLayout()
         backgroundPositionLabel = QLabel("Position")
@@ -954,12 +1005,37 @@ class MainWindow(QMainWindow):
         uiCharaEmotionButton.clicked.connect(self.openHeroEmotionWindow)
  
         if BUFFER_DATA[key]['ui']['charaEmotion'] == '':
-            uiCharaEmotionButton.setText('select')
+            uiCharaEmotionButton.setText('Select')
         else:
             uiCharaEmotionText = BUFFER_DATA[key]['ui']['charaEmotion']
             uiCharaEmotionText = uiCharaEmotionText.replace("sprites/makishiro/", "")
             uiCharaEmotionText = uiCharaEmotionText.replace(".png", "")
             uiCharaEmotionButton.setText(uiCharaEmotionText)
+
+
+        uiCharaBackgroundLayout = QHBoxLayout()
+        uiCharaBackgroundLabel = QLabel("Emotion background")
+        uiCharaBackgroundLabel.setStyleSheet("padding-left: 20px;")
+        uiCharaBackgroundPushbutton = QPushButton("Select")
+
+        uiCharaBackgroundLayout.addWidget(uiCharaBackgroundLabel)
+        uiCharaBackgroundLayout.addWidget(uiCharaBackgroundPushbutton)
+
+        formLayout.addRow(uiCharaBackgroundLayout)
+
+        uiCharaBackgroundPushbutton.clicked.connect(lambda: self.selectBackground("uibackground"))
+
+        if BUFFER_DATA[key]['ui']['charaEmotionBackground'] == '':
+            uiCharaBackgroundPushbutton.setText("Select")
+        else:
+            uiCharaBackgroundText = BUFFER_DATA[key]['ui']['charaEmotionBackground']
+            uiCharaBackgroundText = uiCharaBackgroundText.replace("backgrounds/", "")
+            uiCharaBackgroundText = uiCharaBackgroundText.replace(".png", "")
+            uiCharaBackgroundPushbutton.setText(uiCharaBackgroundText)
+
+
+
+
 
         formLayout.addRow(self.createLine())
 
@@ -1437,12 +1513,14 @@ class MainWindow(QMainWindow):
         
         self.inspectorLoad(path)
 
-    def selectBackground(self):
+    def selectBackground(self, subject):
         key = self.path[0] if hasattr(self, 'path') and self.path else None
         if key:
-            self.backgroundWindow = BackgroundWindow(key)
+            self.backgroundWindow = BackgroundWindow(key, subject)
             self.backgroundWindow.exec()
-        self.inspectorLoad(self.path)
+        if hasattr(self, 'path'):
+            self.inspectorLoad(self.path)
+
 
 app = QApplication(sys.argv)
 window = MainWindow()
