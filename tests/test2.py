@@ -1223,7 +1223,7 @@ class MainWindow(QMainWindow):
             contextMenu = QMenu(self)
 
             # Добавляем действия в контекстное меню
-            action1 = contextMenu.addAction("Action 1")
+            action1 = contextMenu.addAction("Action 4")
             action2 = contextMenu.addAction("Action 2")
             action3 = contextMenu.addAction("Action 3")
 
