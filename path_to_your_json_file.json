@@ -13,14 +13,23 @@
             "animation": false
         },
         "text": {
-            "charaName": "Мичио Хаякава",
+            "charaName": "Макиширо Ямагаки",
             "text": "Пример текста"
         },
         "ui": {
             "time": "Evening",
             "chapter": " Prologue",
+            "emotion": true,
             "charaEmotion": "",
-            "charaEmotionBackground": ""
+            "charaEmotionBackground": "",
+            "charaEmotionBackgroundPosition": {
+                "x": 0,
+                "y": 0
+            },
+            "charaEmotionBackgroundScale": {
+                "x": 1.0,
+                "y": 1.0
+            }
         },
         "sprite": {
             "count": 0
@@ -28,7 +37,7 @@
     },
     "1": {
         "background": {
-            "name": "asd",
+            "name": "backgrounds/bc1.png",
             "position": {
                 "x": 10,
                 "y": 0
@@ -57,8 +66,17 @@
         "ui": {
             "time": "Afternoon",
             "chapter": " Prologue",
+            "emotion": true,
             "charaEmotion": "",
-            "charaEmotionBackground": ""
+            "charaEmotionBackground": "",
+            "charaEmotionBackgroundPosition": {
+                "x": 0,
+                "y": 0
+            },
+            "charaEmotionBackgroundScale": {
+                "x": 1.0,
+                "y": 1.0
+            }
         },
         "sprite": {
             "count": 3,

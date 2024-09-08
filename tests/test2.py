@@ -2,6 +2,7 @@ import sys
 import os
 import subprocess
 import json
+import copy
 from functools import partial
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QScrollArea, QDialog, QWidget, 
                              QGridLayout, QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, 
@@ -582,14 +583,46 @@ class MainWindow(QMainWindow):
         self.toolbar = toolbar
 
     def addFrame(self):
-        legth = 0 
-        if BUFFER_DATA != {}:
-            for key, value in BUFFER_DATA.items():
-                legth+=1
-            BUFFER_DATA[str(legth)]= { "background": { "name": "", "position":{ "x": 0, "y": 0 }, "scale":{ "x": 1, "y": 1 }, "animation": False }, "text":{ "charaName": "", "text": "" }, "ui": { "time": "", "chapter": "", "charaEmotion": "", "charaEmotionBackground": "" }, "sprite":{ "count": 0 } }
-            self.dockTreeWidget(BUFFER_DATA)
-        else:
-            BUFFER_DATA["0"] = { "background": { "name": "", "position":{ "x": 0, "y": 0 }, "scale":{ "x": 1, "y": 1 }, "animation": False }, "text":{ "charaName": "", "text": "" }, "ui": { "time": "", "chapter": "", "charaEmotion": "", "charaEmotionBackground": "" }, "sprite":{ "count": 0 } }
+        length = len(BUFFER_DATA)  # Более эффективный способ получения длины словаря
+        new_frame = {
+            "background": {
+                "name": "",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "scale": {
+                    "x": 1,
+                    "y": 1
+                },
+                "animation": False
+            },
+            "text": {
+                "charaName": "",
+                "text": ""
+            },
+            "ui": {
+                "time": "",
+                "chapter": "",
+                "charaEmotion": "",
+                "charaEmotionBackground": "",
+                "charaEmotionBackgroundPosition": {
+                    "x": 0,
+                    "y": 0
+                },
+                "charaEmotionBackgroundScale": {
+                    "x": 1,
+                    "y": 1
+                }
+            },
+            "sprite": {
+                "count": 0
+            }
+        }
+        
+        # Добавление нового кадра в BUFFER_DATA
+        BUFFER_DATA[str(length)] = new_frame
+        self.dockTreeWidget(BUFFER_DATA)
 
 
 
@@ -992,6 +1025,43 @@ class MainWindow(QMainWindow):
 
         uiChapterLineEdit.textChanged.connect(lambda: self.saveChapter(uiChapterLineEdit.text,key))
 
+        emotionLayout = QHBoxLayout()
+        emotionLabel = QLabel("Emotions")
+        emotionLabel.setStyleSheet("padding-left: 20px;")
+        emotionCheckbox = QCheckBox()
+        emotionLayout.addWidget(emotionLabel)
+        emotionLayout.addWidget(emotionCheckbox)
+
+        formLayout.addRow(emotionLayout)
+
+        emotionCheckbox.setChecked(BUFFER_DATA[key]['ui'].get('emotion', False))
+
+        def toggleEmotionFields():
+            emotionEnabled = emotionCheckbox.isChecked()
+
+            # Включаем или отключаем поля, связанные с эмоциями
+            uiCharaEmotionButton.setEnabled(emotionEnabled)
+            uiCharaBackgroundPushbutton.setEnabled(emotionEnabled)
+            uiCharaBackgroundPositionX.setEnabled(emotionEnabled)
+            uiCharaBackgroundPositionY.setEnabled(emotionEnabled)
+            uiCharaBackgroundScaleX.setEnabled(emotionEnabled)
+            uiCharaBackgroundScaleY.setEnabled(emotionEnabled)
+
+            # Если отключаем, очищаем данные в BUFFER_DATA
+            if not emotionEnabled:
+                BUFFER_DATA[key]['ui']['charaEmotion'] = ""
+                BUFFER_DATA[key]['ui']['charaEmotionBackground'] = ""
+                BUFFER_DATA[key]['ui']['charaEmotionBackgroundPosition'] = {"x": 0, "y": 0}
+                BUFFER_DATA[key]['ui']['charaEmotionBackgroundScale'] = {"x": 1.0, "y": 1.0}
+            
+            # Сохраняем состояние эмоций в BUFFER_DATA
+            BUFFER_DATA[key]['ui']['emotion'] = emotionEnabled
+
+        # Соединяем чекбокс с функцией переключения полей
+        emotionCheckbox.stateChanged.connect(toggleEmotionFields)
+
+
+
         uiCharaEmotionLayout = QHBoxLayout()
         uiCharaEmotionLabel = QLabel('Chara emotion')
         uiCharaEmotionLabel.setStyleSheet("padding-left: 20px;")
@@ -1033,8 +1103,72 @@ class MainWindow(QMainWindow):
             uiCharaBackgroundText = uiCharaBackgroundText.replace(".png", "")
             uiCharaBackgroundPushbutton.setText(uiCharaBackgroundText)
 
+                # Позиция фона эмоции персонажа
+        uiCharaBackgroundPositionLayout = QHBoxLayout()
+        uiCharaBackgroundPositionLabel = QLabel("Position")
+        uiCharaBackgroundPositionLabel.setStyleSheet("padding-left: 20px;")
+        uiCharaBackgroundPositionX = QSpinBox()
+        uiCharaBackgroundPositionY = QSpinBox()
+
+        uiCharaBackgroundPositionLayout.addWidget(uiCharaBackgroundPositionLabel)
+        uiCharaBackgroundPositionLayout.addWidget(QLabel("X"))
+        uiCharaBackgroundPositionLayout.addWidget(uiCharaBackgroundPositionX)
+        uiCharaBackgroundPositionLayout.addWidget(QLabel("Y"))
+        uiCharaBackgroundPositionLayout.addWidget(uiCharaBackgroundPositionY)
+
+        formLayout.addRow(uiCharaBackgroundPositionLayout)
+
+        uiCharaBackgroundPositionX.setRange(-10000, 10000)
+        uiCharaBackgroundPositionY.setRange(-10000, 10000)
+
+        if 'charaEmotionBackgroundPosition' not in BUFFER_DATA[key]['ui']:
+            BUFFER_DATA[key]['ui']['charaEmotionBackgroundPosition'] = {"x": 0, "y": 0}
+
+        uiCharaBackgroundPositionX.setValue(BUFFER_DATA[key]['ui']['charaEmotionBackgroundPosition']['x'])
+        uiCharaBackgroundPositionY.setValue(BUFFER_DATA[key]['ui']['charaEmotionBackgroundPosition']['y'])
+
+        uiCharaBackgroundPositionX.valueChanged.connect(
+            lambda: self.saveSpinValue(uiCharaBackgroundPositionX, key, False, "charaEmotionBackgroundPosition", "x", "ui", None)
+        )
+        uiCharaBackgroundPositionY.valueChanged.connect(
+            lambda: self.saveSpinValue(uiCharaBackgroundPositionY, key, False, "charaEmotionBackgroundPosition", "y", "ui", None)
+        )
 
 
+
+        # Масштаб фона эмоции персонажа
+        uiCharaBackgroundScaleLayout = QHBoxLayout()
+        uiCharaBackgroundScaleLabel = QLabel("Scale")
+        uiCharaBackgroundScaleLabel.setStyleSheet("padding-left: 20px;")
+        uiCharaBackgroundScaleX = QDoubleSpinBox()
+        uiCharaBackgroundScaleY = QDoubleSpinBox()
+
+        uiCharaBackgroundScaleLayout.addWidget(uiCharaBackgroundScaleLabel)
+        uiCharaBackgroundScaleLayout.addWidget(QLabel("X"))
+        uiCharaBackgroundScaleLayout.addWidget(uiCharaBackgroundScaleX)
+        uiCharaBackgroundScaleLayout.addWidget(QLabel("Y"))
+        uiCharaBackgroundScaleLayout.addWidget(uiCharaBackgroundScaleY)
+
+        formLayout.addRow(uiCharaBackgroundScaleLayout)
+
+        uiCharaBackgroundScaleX.setRange(0, 10000)
+        uiCharaBackgroundScaleY.setRange(0, 10000)
+
+        if 'charaEmotionBackgroundScale' not in BUFFER_DATA[key]['ui']:
+            BUFFER_DATA[key]['ui']['charaEmotionBackgroundScale'] = {"x": 1, "y": 1}
+
+        uiCharaBackgroundScaleX.setValue(BUFFER_DATA[key]['ui']['charaEmotionBackgroundScale']['x'])
+        uiCharaBackgroundScaleY.setValue(BUFFER_DATA[key]['ui']['charaEmotionBackgroundScale']['y'])
+        
+        uiCharaBackgroundScaleX.valueChanged.connect(
+            lambda: self.saveSpinValue(uiCharaBackgroundScaleX, key, False, "charaEmotionBackgroundScale", "x", "ui", None)
+        )
+        uiCharaBackgroundScaleY.valueChanged.connect(
+            lambda: self.saveSpinValue(uiCharaBackgroundScaleY, key, False, "charaEmotionBackgroundScale", "y", "ui", None)
+        )
+
+
+        toggleEmotionFields()
 
 
         formLayout.addRow(self.createLine())
@@ -1214,32 +1348,59 @@ class MainWindow(QMainWindow):
         # Определяем элемент, на который нажали правой кнопкой мыши
         item = self.spritesListWidget.itemAt(pos)
         
-        if item is not None:
-            # Получаем индекс элемента
-            itemIndex = self.spritesListWidget.row(item)
-            print(f"Clicked on item: {item.text()} at index {itemIndex}")
-        
+        if item is not None:        
             # Создаем контекстное меню
             contextMenu = QMenu(self)
 
             # Добавляем действия в контекстное меню
-            action1 = contextMenu.addAction("Action 4")
-            action2 = contextMenu.addAction("Action 2")
-            action3 = contextMenu.addAction("Action 3")
+            duplicateAction = contextMenu.addAction("Duplicate")
+            deleteAction = contextMenu.addAction("Delete")
 
             # Определяем, какое действие было выбрано
             action = contextMenu.exec(self.spritesListWidget.mapToGlobal(pos))
 
-            if action == action1:
-                print(f"Action 1 selected for item at index {itemIndex}: {item.text()}")
-            elif action == action2:
-                print(f"Action 2 selected for item at index {itemIndex}: {item.text()}")
-            elif action == action3:
-                print(f"Action 3 selected for item at index {itemIndex}: {item.text()}")
+            if action == duplicateAction:
+                self.duplicateSprite(item)
+            elif action == deleteAction:
+                self.deleteSprite(item)
         else:
             print("No item under the click")
 
 
+    def duplicateSprite(self, item):
+        itemIndex = self.spritesListWidget.row(item)
+        buffer = copy.deepcopy(BUFFER_DATA[self.key]["sprite"][str(itemIndex)])
+        buffer["spriteId"] = f"Sprite: {BUFFER_DATA[self.key]['sprite']['count']}"
+        count = BUFFER_DATA[self.key]["sprite"]['count']
+        BUFFER_DATA[self.key]["sprite"][str(count)] = buffer
+        BUFFER_DATA[self.key]["sprite"]['count'] += 1
+        self.inspectorLoad(self.path)
+
+
+    def deleteSprite(self, item):
+        itemIndex = self.spritesListWidget.row(item)
+        
+        # Удаляем выбранный спрайт из BUFFER_DATA
+        del BUFFER_DATA[self.key]["sprite"][str(itemIndex)]
+        
+        # Уменьшаем количество спрайтов на один
+        BUFFER_DATA[self.key]["sprite"]['count'] -= 1
+        
+        # Сдвигаем оставшиеся спрайты, чтобы заполнить пробел
+        for i in range(itemIndex, BUFFER_DATA[self.key]["sprite"]['count']):
+            BUFFER_DATA[self.key]["sprite"][str(i)] = BUFFER_DATA[self.key]["sprite"][str(i + 1)]
+            BUFFER_DATA[self.key]["sprite"][str(i)]["spriteId"] = f'Sprite: {i}'
+        
+        # Проверяем, существует ли последний элемент, и удаляем его, если он есть
+        last_index = str(BUFFER_DATA[self.key]["sprite"]['count'])
+        if last_index in BUFFER_DATA[self.key]["sprite"]:
+            del BUFFER_DATA[self.key]["sprite"][last_index]
+        
+        # Обновляем список спрайтов и панель инспектора
+        self.inspectorLoad(self.path)
+
+        
+        
 
 
     def spritesAnimationCheckboxClicked(self, spritesAnimationCheckbox, spritesAnimationTimeSpinbox, 
@@ -1411,8 +1572,15 @@ class MainWindow(QMainWindow):
         if animation == False:
             if object == "background":
                 BUFFER_DATA[key][object][type][item] = spinbox.value()
-            elif object == "sprite":
+            elif object == "sprite" and index is not None:
                 BUFFER_DATA[key][object][index][type][item] = spinbox.value()
+            elif object == "ui":
+                if type == "charaEmotionBackgroundPosition":
+                    BUFFER_DATA[key][object]["charaEmotionBackgroundPosition"][item] = spinbox.value()
+                elif type == "charaEmotionBackgroundScale":
+                    BUFFER_DATA[key][object]["charaEmotionBackgroundScale"][item] = spinbox.value()
+                else:
+                    BUFFER_DATA[key][object][type] = spinbox.value()
         else:
             if object == "background" and type != "time":
                 BUFFER_DATA[key][object]["animationSettings"][type][item] = spinbox.value()
@@ -1422,7 +1590,10 @@ class MainWindow(QMainWindow):
                 BUFFER_DATA[key][object]["animationSettings"][type] = spinbox.value()
             elif object == "sprite" and type == "time":
                 BUFFER_DATA[key][object][index]["animationSettings"][type] = spinbox.value()
+
             
+
+
     def blockSignalsForAnimation(self, time, positionX, positionY, scaleX, scaleY, animationSettings):
         time.blockSignals(True)
         positionX.blockSignals(True)
