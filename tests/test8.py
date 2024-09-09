@@ -1,7 +1,7 @@
 import sys
 import json
 from PyQt6.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QVBoxLayout, QWidget, QPushButton
-from PyQt6.QtCore import QTimer, QPointF, QRectF, QPoint, Qt, QElapsedTimer
+from PyQt6.QtCore import QTimer, QPointF, QRectF, Qt, QElapsedTimer
 from PyQt6.QtGui import QPixmap, QPainter, QBrush, QColor, QWheelEvent, QTransform, QFont,  QPolygonF, QPainterPath, QRegion
 
 # Ваш JSON-данные остаются без изменений

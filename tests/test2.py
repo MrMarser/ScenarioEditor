@@ -21,6 +21,16 @@ MAIN_HERO_EMOTION_FOLDER = "sprites/makishiro"
 # Example structure
 BUFFER_DATA = {}
 
+
+
+
+
+
+
+
+
+
+
 class SelectMainHeroEmotion(QDialog):
     emotionSelected = pyqtSignal(str)  # Сигнал, который передает путь к выбранному изображению
 
