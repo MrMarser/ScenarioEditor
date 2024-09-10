@@ -461,6 +461,7 @@ class MainWindow(QMainWindow):
         self.connectSignals()
         self.inspectorDockWidget()
 
+    
     def barMenu(self):
         menu = self.menuBar()
         fileMenu = menu.addMenu("&File")
@@ -619,6 +620,7 @@ class MainWindow(QMainWindow):
             "ui": {
                 "time": "",
                 "chapter": "",
+                "emotion": False,
                 "charaEmotion": "",
                 "charaEmotionBackground": "",
                 "charaEmotionBackgroundPosition": {
@@ -723,8 +725,8 @@ class MainWindow(QMainWindow):
                 self.image_items.append((sprite_item, sprite_info))
         
         # Создаем фиксированное изображение
-        mhimage = "tests/HeroMainDialogueTheme.PNG"
-        nmhimage = "tests/notNeroMainDialogueTheme.PNG"
+        mhimage = "packages/HeroMainDialogueTheme.PNG"
+        nmhimage = "packages/notNeroMainDialogueTheme.PNG"
 
         if BUFFER_DATA[self.key]["text"]["charaName"] == "Макиширо Ямагаки":
             fixed_image_path = mhimage
@@ -951,6 +953,8 @@ class MainWindow(QMainWindow):
 
     def connectSignals(self):
         self.treeWidget.itemClicked.connect(self.onItemClicked)
+        self.treeWidget.currentItemChanged.connect(self.onItemClicked)  # Добавляем связь с клавишами
+
 
     def onItemClicked(self, item):
         self.path = []
@@ -960,6 +964,9 @@ class MainWindow(QMainWindow):
         self.path.reverse()
         
         print(f"Item clicked: {self.path}")  # Отладочное сообщение для проверки пути
+
+        if not self.path:
+            return  # Если путь пустой, не продолжаем выполнение
 
         # Здесь должна происходить загрузка инспектора, а не вызов окна фона
         self.inspectorLoad(self.path)
