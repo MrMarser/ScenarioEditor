@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QScrollArea, QDialog, QW
                              QFileDialog, QToolBar, QGraphicsView, QGraphicsScene, 
                              QGraphicsRectItem, QMessageBox, QSpinBox, QCheckBox,
                              QComboBox, QTextEdit, QListWidget, QDoubleSpinBox, QFrame,
-                             QLineEdit, QListWidgetItem, QMenu,QGraphicsPixmapItem)
+                             QLineEdit, QListWidgetItem, QMenu,QGraphicsPixmapItem, QGraphicsTextItem)
 from PyQt6.QtGui import (QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush,
                           QPixmap, QTransform, QColor, QFont, QRegion, QPolygonF,
                           QPainterPath) 
@@ -29,6 +29,28 @@ BUFFER_DATA = {}
 
 
 
+class OutlinedTextItem(QGraphicsTextItem):
+    def __init__(self, text):
+        super().__init__(text)
+        self.outlinePen = QPen(Qt.GlobalColor.black, 8)  # Цвет и толщина обводки
+        self.fillBrush = QBrush(Qt.GlobalColor.white)    # Цвет заполнения текста
+
+    def paint(self, painter, option, widget):
+        painter.save()
+        path = QPainterPath()
+        path.addText(0, 0, self.font(), self.toPlainText())
+        
+        # Рисуем обводку
+        painter.setPen(self.outlinePen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawPath(path)
+        
+        # Рисуем заполнение текста
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(self.fillBrush)
+        painter.drawPath(path)
+        
+        painter.restore()
 
 
 
@@ -800,32 +822,32 @@ class MainWindow(QMainWindow):
         # Текстовые элементы
         text = BUFFER_DATA[self.key]["text"]["text"]
         self.text_item = self.scene.addText(text)
-        self.text_item.setDefaultTextColor(QColor(255, 255, 255))
-        self.text_item.setPos(25, 715)
+        self.text_item.setPos(20, 710)
         self.text_item.setTextWidth(1100)
         self.text_item.setZValue(100)
         self.text_item.setFont(QFont("Arial", 24))
 
         name = BUFFER_DATA[self.key]["text"]["charaName"]
-        self.name_text = self.scene.addText(name)
-        self.name_text.setDefaultTextColor(QColor(255, 255, 255))
-        self.name_text.setPos(25, 615)
+        self.name_text = OutlinedTextItem(name)
+        self.name_text.setPos(15, 670)
         self.name_text.setZValue(100)
         self.name_text.setFont(QFont("Arial", 55))
+        self.scene.addItem(self.name_text)
 
         daytimeText = BUFFER_DATA[self.key]["ui"]["time"]
-        self.time_text = self.scene.addText(daytimeText)
-        self.time_text.setDefaultTextColor(QColor(255, 255, 255))
-        self.time_text.setPos(1300, 20)
+        self.time_text = OutlinedTextItem(daytimeText)
+        self.time_text.setPos(1300, 60)
         self.time_text.setZValue(100)
         self.time_text.setFont(QFont("Arial", 40))
+        self.scene.addItem(self.time_text)
 
         chapterText = BUFFER_DATA[self.key]["ui"]["chapter"]
-        self.chapter_text = self.scene.addText(chapterText)
-        self.chapter_text.setDefaultTextColor(QColor(255, 255, 255))
-        self.chapter_text.setPos(1200, 77)
+        self.chapter_text = OutlinedTextItem(chapterText)
+        self.chapter_text.setPos(1205, 108)
         self.chapter_text.setZValue(100)
         self.chapter_text.setFont(QFont("Arial", 30))
+        self.scene.addItem(self.chapter_text)
+
 
     def toggle_animation(self, button):
         if not self.animation_active:

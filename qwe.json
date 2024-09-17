@@ -1,0 +1,38 @@
+{
+    "0": {
+        "background": {
+            "name": "",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "scale": {
+                "x": 1,
+                "y": 1
+            },
+            "animation": false
+        },
+        "text": {
+            "charaName": "Саймон Мацуда",
+            "text": "симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония симония "
+        },
+        "ui": {
+            "time": "Afternoon",
+            "chapter": "Да",
+            "emotion": false,
+            "charaEmotion": "",
+            "charaEmotionBackground": "",
+            "charaEmotionBackgroundPosition": {
+                "x": 0,
+                "y": 0
+            },
+            "charaEmotionBackgroundScale": {
+                "x": 1.0,
+                "y": 1.0
+            }
+        },
+        "sprite": {
+            "count": 0
+        }
+    }
+}
