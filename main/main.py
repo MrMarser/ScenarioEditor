@@ -323,8 +323,8 @@ class SpriteWindow(QDialog):
                                                                        "y": 0
                                                                    },
                                                                    "scale": {
-                                                                       "x": 1,
-                                                                       "y": 1
+                                                                       "x": 0.6,
+                                                                       "y": 0.6
                                                                    },
                                                                    "animation": False}
                     
