@@ -656,7 +656,8 @@ class MainWindow(QMainWindow):
             },
             "sprite": {
                 "count": 0
-            }
+            },
+            "comment": ""
         }
         
         # Добавление нового кадра в BUFFER_DATA
@@ -1639,6 +1640,27 @@ class MainWindow(QMainWindow):
                                                                                     spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox,
                                                                                     spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox))
 
+
+        formLayout.addRow(self.createLine())
+
+        commentsLayout = QHBoxLayout()
+        commentsLabel = QLabel("Comment")
+        commentsLabel.setStyleSheet("padding-left: 20px;")
+        commentsTextBox = QTextEdit()
+
+        commentsLayout.addWidget(commentsLabel)
+        commentsLayout.addWidget(commentsTextBox)
+
+        formLayout.addRow(commentsLayout)
+
+        commentsTextBox.setText(BUFFER_DATA[key]["comment"])
+
+        commentsTextBox.textChanged.connect(lambda: self.saveComment(commentsTextBox.toPlainText(), key))
+
+        
+
+    def saveComment(self, text, key):
+        BUFFER_DATA[key]["comment"] = text
 
 
 
