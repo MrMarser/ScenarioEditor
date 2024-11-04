@@ -20,8 +20,12 @@ BACKGROUND_FOLDER = "backgrounds/"
 SPRITES_FOLDER = "sprites/basic"
 MAIN_HERO_EMOTION_FOLDER = "sprites/makishiro"
 
-# Example structure
 BUFFER_DATA = {}
+
+SETTINGS = {
+    "scale_factor": 1.0,
+    "position": {"x": 0, "y": 0}
+}
 
 
 
@@ -692,6 +696,8 @@ class MainWindow(QMainWindow):
         self.scene = QGraphicsScene()
         view = QGraphicsView(self.scene)
         view.setSceneRect(0, 0, 1600, 900)
+        view.setTransform(QTransform().scale(SETTINGS["scale_factor"], SETTINGS["scale_factor"]))
+        view.setSceneRect(SETTINGS["position"]["x"], SETTINGS["position"]["y"], 1600, 900)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
         view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -713,11 +719,9 @@ class MainWindow(QMainWindow):
             self.load_images()
 
     def load_images(self):
-
-        
-        """Загружает фон и спрайты на сцену."""
         self.scene.clear()
 
+        # Задаем белый фон
         white_background = self.scene.addRect(QRectF(0, 0, 1600, 900), brush=QBrush(QColor(255, 255, 255)))
         white_background.setZValue(-10)
 
@@ -727,10 +731,30 @@ class MainWindow(QMainWindow):
             background_pixmap = QPixmap(background_info['name'])
             if not background_pixmap.isNull():
                 self.background_item = QGraphicsPixmapItem(background_pixmap)
+
+                # Вычисляем коэффициент масштабирования для подгонки по высоте экрана
+                screen_height = 900  # высота экрана в пикселях
+                image_height = background_pixmap.height()
+                scale_factor = screen_height / image_height
+
+                # Проверяем, если текущий масштаб по высоте отличается от нужного значения
+                if background_info["scale"]["y"] != scale_factor:
+                    # Сохраняем новый масштаб в BUFFER_DATA
+                    BUFFER_DATA[self.key]["background"]["scale"]["y"] = scale_factor
+                    BUFFER_DATA[self.key]["background"]["scale"]["x"] = scale_factor
+
+                # Применяем масштабирование, даже если оно не изменилось
+                self.background_item.setTransform(QTransform().scale(
+                    BUFFER_DATA[self.key]["background"]["scale"]["x"],
+                    BUFFER_DATA[self.key]["background"]["scale"]["y"]
+                ))
+
+                # Устанавливаем позицию и z-значение
                 self.background_item.setPos(background_info["position"]["x"], background_info["position"]["y"])
-                self.background_item.setTransform(QTransform().scale(background_info["scale"]["x"], background_info["scale"]["y"]))
                 self.background_item.setZValue(-1)
                 self.scene.addItem(self.background_item)
+
+        
 
         sprite_data = BUFFER_DATA[self.key]["sprite"]
         sprite_count = BUFFER_DATA[self.key]["sprite"]["count"]
@@ -741,12 +765,25 @@ class MainWindow(QMainWindow):
             sprite_pixmap = QPixmap(sprite_info['name'])
             if not sprite_pixmap.isNull():
                 sprite_item = QGraphicsPixmapItem(sprite_pixmap)
+
+                # Проверка условий для центрирования спрайта
+                if sprite_count == 1 and sprite_info["position"]["x"] == 0 and sprite_info["position"]["y"] == 0:
+                    # Рассчитываем центральное положение по оси X
+                    screen_width = 1600  # ширина экрана в пикселях
+                    sprite_width = sprite_pixmap.width() * sprite_info["scale"]["x"]
+                    centered_x = (screen_width - sprite_width) / 2
+                    sprite_info["position"]["x"] = centered_x  # Сохраняем новую позицию в BUFFER_DATA
+
+                    # Также сохраняем обновлённое значение позиции в BUFFER_DATA для сохранения
+                    BUFFER_DATA[self.key]["sprite"][str(i)]["position"]["x"] = centered_x
+
+                # Устанавливаем позицию, масштаб и добавляем спрайт на сцену
                 sprite_item.setPos(sprite_info["position"]["x"], sprite_info["position"]["y"])
                 sprite_item.setTransform(QTransform().scale(sprite_info["scale"]["x"], sprite_info["scale"]["y"]))
                 sprite_item.setZValue(i)
                 self.scene.addItem(sprite_item)
                 self.image_items.append((sprite_item, sprite_info))
-        
+
         # Создаем фиксированное изображение
         mhimage = "packages/HeroMainDialogueTheme.PNG"
         nmhimage = "packages/notNeroMainDialogueTheme.PNG"
@@ -767,6 +804,7 @@ class MainWindow(QMainWindow):
         # Если emotion включен, добавляем charaEmotionBackground
         if BUFFER_DATA[self.key]["ui"]["emotion"]:
             self.emotionWindow()
+
 
     def emotionWindow(self):
         """Создаем фон для эмоций с полигональной маской."""
@@ -931,31 +969,24 @@ class MainWindow(QMainWindow):
             return -1 + (4 - 2 * t) * t
 
     def zoom(self, event: QWheelEvent):
+        zoom_in_factor = 1.1
+        zoom_out_factor = 0.9
 
-        self.scale_factor = 1.0  # Начальный масштаб
-        self.min_scale = 0.5     # Минимальный масштаб (например, 50% от оригинала)
-        self.max_scale = 2.0     # Максимальный масштаб (например, 200% от оригинала)
+        self.min_scale = 0.5
+        self.max_scale = 5
 
-
-        view = self.centralWidget()
-        zoom_in_factor = 1.1  # Коэффициент увеличения
-        zoom_out_factor = 0.9  # Коэффициент уменьшения
-
+        self.scale_factor = SETTINGS["scale_factor"]
+        
         if event.angleDelta().y() > 0:
             factor = zoom_in_factor
         else:
             factor = zoom_out_factor
 
-        # Вычисляем новый масштаб
         new_scale = self.scale_factor * factor
-
-        # Проверяем, не выходит ли новый масштаб за пределы допустимых значений
         if self.min_scale <= new_scale <= self.max_scale:
-            view.scale(factor, factor)
+            self.centralWidget().scale(factor, factor)
             self.scale_factor = new_scale
-        else:
-            # Если выходит за пределы, просто игнорируем изменение масштаба
-            print(f"Масштабирование ограничено: текущий масштаб {self.scale_factor:.2f}, новый масштаб {new_scale:.2f}")
+            SETTINGS["scale_factor"] = self.scale_factor
 
 
     def setupDockWidget(self):
@@ -1639,6 +1670,14 @@ class MainWindow(QMainWindow):
                                                                                     spritesPositionYSpinbox, spritesScaleXSpinbox, spritesScaleYSpinbox,
                                                                                     spritesAnimationCheckbox, spritesAnimationTimeSpinbox, spritesAnimationPositionXSpinbox,
                                                                                     spritesAnimationPositionYSpinbox, spritesAnimationScaleXSpinbox, spritesAnimationScaleYSpinbox))
+        
+
+        spritesAnimationPositionXSpinbox.valueChanged.connect(lambda: self.saveSpinValue(spritesAnimationPositionXSpinbox, key, True, "position", "x", "sprite",str(self.id)))
+        spritesAnimationPositionYSpinbox.valueChanged.connect(lambda: self.saveSpinValue(spritesAnimationPositionYSpinbox, key, True, "position", "y", "sprite",str(self.id)))
+        spritesAnimationScaleXSpinbox.valueChanged.connect(lambda: self.saveSpinValue(spritesAnimationScaleXSpinbox, key, True, "scale", "x", "sprite",str(self.id)))
+        spritesAnimationScaleYSpinbox.valueChanged.connect(lambda: self.saveSpinValue(spritesAnimationScaleYSpinbox, key, True, "scale", "y", "sprite",str(self.id)))
+
+
 
 
         formLayout.addRow(self.createLine())
