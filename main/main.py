@@ -995,7 +995,7 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dockWidget)
 
         
-        dockWidget.setMaximumSize(100, 800)  # Установите максимальный размер, если нужно
+        dockWidget.setMaximumWidth(100)
 
 
 
@@ -1059,7 +1059,7 @@ class MainWindow(QMainWindow):
         self.inspectorDock.setWidget(self.inspectorGroup)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.inspectorDock)
         self.inspectorGroup.setLayout(QVBoxLayout())
-        self.inspectorDock.setMaximumSize(400, 800)
+        self.inspectorDock.setMaximumWidth(400)
         self.inspectorGroup.setStyleSheet("""
             QGroupBox {
                 background-color: rgb(50, 70, 90);
