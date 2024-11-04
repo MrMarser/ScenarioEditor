@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QScrollArea, QDialog, QW
                              QFileDialog, QToolBar, QGraphicsView, QGraphicsScene, 
                              QGraphicsRectItem, QMessageBox, QSpinBox, QCheckBox,
                              QComboBox, QTextEdit, QListWidget, QDoubleSpinBox, QFrame,
-                             QLineEdit, QListWidgetItem, QMenu,QGraphicsPixmapItem, QGraphicsTextItem)
+                             QLineEdit, QListWidgetItem, QMenu,QGraphicsPixmapItem, QGraphicsTextItem, QSizePolicy)
 from PyQt6.QtGui import (QAction, QIcon, QWheelEvent, QPainter, QPen, QBrush,
                           QPixmap, QTransform, QColor, QFont, QRegion, QPolygonF,
                           QPainterPath) 
@@ -993,6 +993,12 @@ class MainWindow(QMainWindow):
         dockWidget = QDockWidget("Scene Elements", self)
         dockWidget.setWidget(self.treeWidget)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dockWidget)
+
+        
+        dockWidget.setMaximumSize(100, 800)  # Установите максимальный размер, если нужно
+
+
+
         self.treeWidget.header().setStyleSheet("""
             QHeaderView::section {
                 background-color: rgb(50, 70, 90); 
@@ -1053,6 +1059,7 @@ class MainWindow(QMainWindow):
         self.inspectorDock.setWidget(self.inspectorGroup)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.inspectorDock)
         self.inspectorGroup.setLayout(QVBoxLayout())
+        self.inspectorDock.setMaximumSize(400, 800)
         self.inspectorGroup.setStyleSheet("""
             QGroupBox {
                 background-color: rgb(50, 70, 90);
@@ -1697,6 +1704,8 @@ class MainWindow(QMainWindow):
         commentsTextBox.textChanged.connect(lambda: self.saveComment(commentsTextBox.toPlainText(), key))
 
         
+
+    
 
     def saveComment(self, text, key):
         BUFFER_DATA[key]["comment"] = text
