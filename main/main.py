@@ -1786,7 +1786,7 @@ class MainWindow(QMainWindow):
                 sprite_data["animationSettings"] = {
                     "time": 0,
                     "position": {"x": 0, "y": 0},
-                    "scale": {"x": 1, "y": 1}
+                    "scale": {"x": 1.0, "y": 1.0}
                 }
         
         # Передаем sprite_data в animationSpriteSettings
@@ -1829,8 +1829,8 @@ class MainWindow(QMainWindow):
 
         spritesPositionXSpinbox.setEnabled(True)
         spritesPositionYSpinbox.setEnabled(True)
-        spritesPositionXSpinbox.setValue(sprite_data["position"]["x"])
-        spritesPositionYSpinbox.setValue(sprite_data["position"]["y"])
+        spritesPositionXSpinbox.setValue(int(sprite_data["position"]["x"]))
+        spritesPositionYSpinbox.setValue(int(sprite_data["position"]["y"]))
 
         spritesScaleXSpinbox.setEnabled(True)
         spritesScaleYSpinbox.setEnabled(True)
